@@ -1,0 +1,10 @@
+{
+  "serverHost": "localhost",
+  "port": 5432,
+  "databaseName": "denemeDatabase",
+  "username": "postgres",
+  "password": "12345",
+  "schema": "public",
+  "pgDumpPath": "pg_dump",
+  "pgRestorePath": "pg_restore"
+}
