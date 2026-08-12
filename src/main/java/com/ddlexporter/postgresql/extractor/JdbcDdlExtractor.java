@@ -172,7 +172,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                     String isNullable = rs.getString("is_nullable");
                     String colDefault = rs.getString("column_default");
 
-                    sb.append("  ").append(quoteIdentifier(colName)).append(" ").append(dataType.toUpperCase());
+                    sb.append("  ").append(quoteIdentifier(colName)).append(" ").append(dataType.toUpperCase(java.util.Locale.ROOT));
                     if (maxLen > 0) {
                         sb.append("(").append(maxLen).append(")");
                     }
