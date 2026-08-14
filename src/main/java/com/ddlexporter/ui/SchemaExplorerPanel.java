@@ -8,6 +8,8 @@ import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
 import java.awt.*;
 import java.awt.datatransfer.StringSelection;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
@@ -25,10 +27,20 @@ public class SchemaExplorerPanel extends JPanel {
     private final List<FileNode> allDiscoveredFiles = new ArrayList<>();
     private File currentExportDir;
 
+    // Edit Safety & State
+    private File currentSelectedFile = null;
+    private String originalFileContent = "";
+    private boolean isEditMode = false;
+    private boolean isModified = false;
+    private final JButton editToggleBtn = new JButton("Düzenle 🔒");
+    private final JButton saveBtn = new JButton("Kaydet");
+    private final JButton discardBtn = new JButton("Geri Al");
+    private Runnable onFileSavedListener = null;
+
     public SchemaExplorerPanel() {
         setLayout(new BorderLayout(5, 5));
 
-        // Header / Search Toolbar
+        // Header / Search & Action Toolbar
         JPanel topToolbar = new JPanel(new BorderLayout(8, 0));
         topToolbar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
@@ -46,11 +58,33 @@ public class SchemaExplorerPanel extends JPanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
         topToolbar.add(searchPanel, BorderLayout.CENTER);
 
-        JButton copyBtn = new JButton("SQL Kopyala");
-        copyBtn.setFont(copyBtn.getFont().deriveFont(Font.BOLD, 12f));
-        copyBtn.addActionListener(e -> copySqlToClipboard());
-        topToolbar.add(copyBtn, BorderLayout.EAST);
+        // Action Buttons Toolbar: [Düzenle 🔒] [Kaydet] [Geri Al] [SQL Kopyala]
+        JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
+        editToggleBtn.setFont(editToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
+        editToggleBtn.setFocusPainted(false);
+        editToggleBtn.setToolTipText("Yanlışlıkla değişiklik yapılmasını önlemek için kilitlidir. Kilidi açmak için tıklayın.");
+        editToggleBtn.addActionListener(e -> toggleEditMode());
+        actionsPanel.add(editToggleBtn);
+
+        saveBtn.setFont(saveBtn.getFont().deriveFont(Font.BOLD, 12f));
+        saveBtn.setEnabled(false);
+        saveBtn.setToolTipText("Değişiklikleri diske kaydet (⌘+S / Ctrl+S)");
+        saveBtn.addActionListener(e -> saveCurrentFile());
+        actionsPanel.add(saveBtn);
+
+        discardBtn.setFont(discardBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        discardBtn.setEnabled(false);
+        discardBtn.setToolTipText("Yapılan değişiklikleri iptal edip orijinal haline döndür");
+        discardBtn.addActionListener(e -> discardChanges());
+        actionsPanel.add(discardBtn);
+
+        JButton copyBtn = new JButton("SQL Kopyala");
+        copyBtn.setFont(copyBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        copyBtn.addActionListener(e -> copySqlToClipboard());
+        actionsPanel.add(copyBtn);
+
+        topToolbar.add(actionsPanel, BorderLayout.EAST);
         add(topToolbar, BorderLayout.NORTH);
 
         // Left: Tree View
@@ -70,6 +104,11 @@ public class SchemaExplorerPanel extends JPanel {
             DefaultMutableTreeNode selected = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (selected != null && selected.getUserObject() instanceof FileNode) {
                 FileNode node = (FileNode) selected.getUserObject();
+                if (currentSelectedFile != null && isModified) {
+                    if (!promptSaveBeforeSwitch()) {
+                        return;
+                    }
+                }
                 loadFileContent(node.file);
             }
         });
@@ -82,8 +121,8 @@ public class SchemaExplorerPanel extends JPanel {
         JPanel sqlEditorPanel = new JPanel(new BorderLayout());
         sqlEditorPanel.setBorder(BorderFactory.createTitledBorder("SQL Tanımı (DDL Script)"));
 
-        currentFileLabel = new JLabel(" Henüz bir nesne seçilmedi");
-        currentFileLabel.setFont(currentFileLabel.getFont().deriveFont(Font.ITALIC, 11f));
+        currentFileLabel = new JLabel(" Henüz bir nesne seçilmedi (Kilitli / Salt Okunur)");
+        currentFileLabel.setFont(currentFileLabel.getFont().deriveFont(Font.PLAIN, 11f));
         currentFileLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         sqlEditorPanel.add(currentFileLabel, BorderLayout.NORTH);
 
@@ -91,6 +130,28 @@ public class SchemaExplorerPanel extends JPanel {
         sqlTextArea.setEditable(false);
         sqlTextArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
         sqlTextArea.setMargin(new Insets(8, 8, 8, 8));
+
+        // Keyboard Shortcut: Cmd+S / Ctrl+S to save
+        int menuMask = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx();
+        sqlTextArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_S, menuMask), "saveAction");
+        sqlTextArea.getActionMap().put("saveAction", new AbstractAction() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (isEditMode && isModified) {
+                    saveCurrentFile();
+                }
+            }
+        });
+
+        // Track text changes
+        sqlTextArea.getDocument().addDocumentListener(new DocumentListener() {
+            @Override
+            public void insertUpdate(DocumentEvent e) { onTextChanged(); }
+            @Override
+            public void removeUpdate(DocumentEvent e) { onTextChanged(); }
+            @Override
+            public void changedUpdate(DocumentEvent e) { onTextChanged(); }
+        });
 
         lineNumbersArea = new JTextArea(" 1 ");
         lineNumbersArea.setEditable(false);
@@ -105,7 +166,7 @@ public class SchemaExplorerPanel extends JPanel {
         sqlEditorPanel.add(sqlScrollPane, BorderLayout.CENTER);
 
         // Stats Footer Bar
-        statsLabel = new JLabel(" Satır: 0 | Karakter: 0 | UTF-8 ");
+        statsLabel = new JLabel(" Satır: 0 | Karakter: 0 | UTF-8 | Kilitli ");
         statsLabel.setFont(statsLabel.getFont().deriveFont(Font.PLAIN, 11f));
         statsLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         sqlEditorPanel.add(statsLabel, BorderLayout.SOUTH);
@@ -118,6 +179,137 @@ public class SchemaExplorerPanel extends JPanel {
         splitPane.setDividerLocation(290);
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
+    }
+
+    public void setOnFileSavedListener(Runnable listener) {
+        this.onFileSavedListener = listener;
+    }
+
+    private void toggleEditMode() {
+        if (currentSelectedFile == null) {
+            JOptionPane.showMessageDialog(this, "Lütfen önce ağaçtan düzenlemek istediğiniz bir SQL dosyası seçin.",
+                    "Dosya Seçilmedi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        isEditMode = !isEditMode;
+        sqlTextArea.setEditable(isEditMode);
+
+        if (isEditMode) {
+            editToggleBtn.setText("Kilitle 🔓");
+            editToggleBtn.setForeground(new Color(22, 163, 74));
+            updateFileLabelStatus();
+        } else {
+            editToggleBtn.setText("Düzenle 🔒");
+            editToggleBtn.setForeground(null);
+            updateFileLabelStatus();
+        }
+    }
+
+    private void onTextChanged() {
+        if (currentSelectedFile == null) return;
+
+        String currentText = sqlTextArea.getText();
+        isModified = !currentText.equals(originalFileContent);
+
+        saveBtn.setEnabled(isEditMode && isModified);
+        discardBtn.setEnabled(isModified);
+
+        updateFileLabelStatus();
+        updateLineNumbers(currentText);
+    }
+
+    private void updateFileLabelStatus() {
+        if (currentSelectedFile == null) {
+            currentFileLabel.setText(" Henüz bir nesne seçilmedi");
+            return;
+        }
+
+        String statusSuffix;
+        if (isModified) {
+            statusSuffix = " ● [Değiştirildi - Kaydedilmedi]";
+        } else if (isEditMode) {
+            statusSuffix = " [Düzenleme Modu Aktif 🔓]";
+        } else {
+            statusSuffix = " [Kilitli / Salt Okunur 🔒]";
+        }
+
+        currentFileLabel.setText(" 📄 " + currentSelectedFile.getAbsolutePath() + statusSuffix);
+        if (isModified) {
+            currentFileLabel.setForeground(new Color(217, 119, 6)); // Amber
+        } else {
+            currentFileLabel.setForeground(null);
+        }
+    }
+
+    private void updateLineNumbers(String content) {
+        String[] lines = content.split("\n", -1);
+        StringBuilder lineNums = new StringBuilder();
+        for (int i = 1; i <= Math.max(1, lines.length); i++) {
+            lineNums.append(String.format(" %3d \n", i));
+        }
+        lineNumbersArea.setText(lineNums.toString());
+
+        statsLabel.setText(String.format(" Satır: %d | Karakter: %d | Durum: %s | UTF-8 ",
+                lines.length, content.length(), isEditMode ? "Düzenlenebilir 🔓" : "Kilitli 🔒"));
+    }
+
+    public void saveCurrentFile() {
+        if (currentSelectedFile == null) return;
+        try {
+            String newContent = sqlTextArea.getText();
+            Files.writeString(currentSelectedFile.toPath(), newContent);
+            originalFileContent = newContent;
+            isModified = false;
+            saveBtn.setEnabled(false);
+            discardBtn.setEnabled(false);
+            updateFileLabelStatus();
+
+            JOptionPane.showMessageDialog(this,
+                    "'" + currentSelectedFile.getName() + "' dosyası başarıyla kaydedildi.",
+                    "Kaydedildi", JOptionPane.INFORMATION_MESSAGE);
+
+            if (onFileSavedListener != null) {
+                onFileSavedListener.run();
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this,
+                    "Dosya kaydedilemedi: " + ex.getMessage(),
+                    "Kayıt Hatası", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void discardChanges() {
+        if (currentSelectedFile == null) return;
+        int conf = JOptionPane.showConfirmDialog(this,
+                "'" + currentSelectedFile.getName() + "' üzerindeki kaydedilmemiş tüm değişiklikler geri alınacak.\nEmin misiniz?",
+                "Değişiklikleri Geri Al",
+                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+
+        if (conf == JOptionPane.YES_OPTION) {
+            sqlTextArea.setText(originalFileContent);
+            isModified = false;
+            saveBtn.setEnabled(false);
+            discardBtn.setEnabled(false);
+            updateFileLabelStatus();
+        }
+    }
+
+    private boolean promptSaveBeforeSwitch() {
+        int choice = JOptionPane.showConfirmDialog(this,
+                "'" + currentSelectedFile.getName() + "' üzerinde kaydedilmemiş değişiklikleriniz var.\nKaydetmek istiyor musunuz?",
+                "Kaydedilmemiş Değişiklik",
+                JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+
+        if (choice == JOptionPane.YES_OPTION) {
+            saveCurrentFile();
+            return true;
+        } else if (choice == JOptionPane.NO_OPTION) {
+            isModified = false;
+            return true;
+        } else {
+            return false; // Cancel switch
+        }
     }
 
     public void loadExportDirectory(String baseDir) {
@@ -158,7 +350,6 @@ public class SchemaExplorerPanel extends JPanel {
 
         String lowerFilter = filterText.toLowerCase();
 
-        // Group by DB and Type
         java.util.Set<String> databases = new java.util.TreeSet<>();
         for (FileNode fn : allDiscoveredFiles) {
             if (lowerFilter.isEmpty() || fn.fileName.toLowerCase().contains(lowerFilter) || fn.typeName.toLowerCase().contains(lowerFilter)) {
@@ -197,21 +388,23 @@ public class SchemaExplorerPanel extends JPanel {
 
     private void loadFileContent(File file) {
         try {
+            this.currentSelectedFile = file;
             String content = Files.readString(file.toPath());
+            this.originalFileContent = content;
+            this.isModified = false;
+            this.isEditMode = false;
+
             sqlTextArea.setText(content);
             sqlTextArea.setCaretPosition(0);
-            currentFileLabel.setText(" 📄 " + file.getAbsolutePath());
+            sqlTextArea.setEditable(false);
 
-            // Build line numbers
-            String[] lines = content.split("\n", -1);
-            StringBuilder lineNums = new StringBuilder();
-            for (int i = 1; i <= Math.max(1, lines.length); i++) {
-                lineNums.append(String.format(" %3d \n", i));
-            }
-            lineNumbersArea.setText(lineNums.toString());
+            editToggleBtn.setText("Düzenle 🔒");
+            editToggleBtn.setForeground(null);
+            saveBtn.setEnabled(false);
+            discardBtn.setEnabled(false);
 
-            statsLabel.setText(String.format(" Satır: %d | Karakter: %d | Boyut: %.2f KB | UTF-8 ",
-                    lines.length, content.length(), file.length() / 1024.0));
+            updateFileLabelStatus();
+            updateLineNumbers(content);
         } catch (Exception e) {
             sqlTextArea.setText("Dosya okunamadı: " + e.getMessage());
         }
@@ -236,7 +429,6 @@ public class SchemaExplorerPanel extends JPanel {
 
             statsLabel.setForeground(new Color(150, 150, 150));
         } else {
-            // Crisp White Theme for SQL Editor
             sqlTextArea.setBackground(Color.WHITE);
             sqlTextArea.setForeground(new Color(31, 35, 40));
             sqlTextArea.setCaretColor(new Color(9, 105, 218));

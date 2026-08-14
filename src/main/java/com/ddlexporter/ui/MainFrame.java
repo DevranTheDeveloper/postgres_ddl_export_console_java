@@ -72,6 +72,18 @@ public class MainFrame extends JFrame {
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
 
+        // Connect SQL save events to sync Diff, Git, and Audit Log
+        schemaExplorerPanel.setOnFileSavedListener(() -> {
+            String outDir = connectionPanel.getOutputDir();
+            diffViewerPanel.setExportDir(outDir);
+            gitSyncPanel.refreshGitStatus();
+            PostgresqlConfigurationSettings s = connectionPanel.getSettingsFromUi();
+            auditManager.logAction("SQL Dosyası Düzenlendi", s.getUsername(), s.getDatabaseName(), "Şema Gezgininden dosya kaydedildi", 0, true);
+            serverStatusPanel.loadAuditHistory();
+            java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            logPanel.appendLog("[" + java.time.LocalDateTime.now().format(dtf) + "] [INFO] SQL dosyası güncellendi ve diske kaydedildi.");
+        });
+
         // Main Container
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
 
