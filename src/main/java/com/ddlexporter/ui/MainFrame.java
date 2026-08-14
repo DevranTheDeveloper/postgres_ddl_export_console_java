@@ -21,6 +21,7 @@ public class MainFrame extends JFrame {
     private static final String CARD_METRICS = "METRICS";
 
     private final ProfileManager profileManager = new ProfileManager();
+    private final AuditHistoryManager auditManager = new AuditHistoryManager();
     private final JComboBox<String> profileComboBox = new JComboBox<>();
 
     private final ConnectionPanel connectionPanel;
@@ -65,7 +66,7 @@ public class MainFrame extends JFrame {
         // Sub-Panels
         connectionPanel = new ConnectionPanel(this::startExportProcess);
         schemaExplorerPanel = new SchemaExplorerPanel();
-        serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi);
+        serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager);
         diffViewerPanel = new DiffViewerPanel();
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
@@ -437,6 +438,7 @@ public class MainFrame extends JFrame {
         logPanel.setProgressIndeterminate(true, "DDL Dışa Aktarma İşlemi Başlatıldı...");
         statusLabel.setText("DDL çıkarma işlemi devam ediyor...");
 
+        long startTime = System.currentTimeMillis();
         ILogger guiLogger = new GuiLogger(logPanel::appendLog);
 
         new SwingWorker<Void, Void>() {
@@ -468,7 +470,10 @@ public class MainFrame extends JFrame {
             @Override
             protected void done() {
                 connectionPanel.setExporting(false);
+                long duration = System.currentTimeMillis() - startTime;
                 if (exportError == null) {
+                    auditManager.logAction("DDL Dışa Aktarma", settings.getUsername(), settings.getDatabaseName() + "/" + settings.getSchema(), "Tüm şema başarıyla çıkarıldı (" + outputDir + ")", duration, true);
+                    serverStatusPanel.loadAuditHistory();
                     logPanel.setProgress(100, "DDL Aktarımı Başarıyla Tamamlandı!");
                     statusLabel.setText("DDL Başarıyla Aktarıldı! (" + outputDir + ")");
                     schemaExplorerPanel.loadExportDirectory(outputDir);
@@ -480,6 +485,8 @@ public class MainFrame extends JFrame {
                             "Tüm PostgreSQL veritabanı DDL script'leri başarıyla dışa aktarıldı!",
                             "İşlem Başarılı", JOptionPane.INFORMATION_MESSAGE);
                 } else {
+                    auditManager.logAction("DDL Dışa Aktarma", settings.getUsername(), settings.getDatabaseName() + "/" + settings.getSchema(), "Hata: " + exportError.getMessage(), duration, false);
+                    serverStatusPanel.loadAuditHistory();
                     logPanel.setProgress(0, "Hata Oluştu!");
                     statusLabel.setText("Hata: " + exportError.getMessage());
                     logPanel.appendLog("[HATA] " + exportError.getMessage());

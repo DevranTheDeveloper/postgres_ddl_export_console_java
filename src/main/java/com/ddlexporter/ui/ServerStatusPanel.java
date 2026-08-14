@@ -3,6 +3,7 @@ package com.ddlexporter.ui;
 import com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings;
 
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.sql.Connection;
@@ -13,6 +14,7 @@ import java.util.function.Supplier;
 
 public class ServerStatusPanel extends JPanel {
     private final Supplier<PostgresqlConfigurationSettings> settingsSupplier;
+    private final AuditHistoryManager auditManager;
 
     // Top KPI Labels
     private final JLabel statusValueLabel = new JLabel("Bilinmiyor");
@@ -25,9 +27,18 @@ public class ServerStatusPanel extends JPanel {
     // Charts
     private final MetricsChartPanel chartPanel = new MetricsChartPanel();
 
-    // Active Queries Table
-    private final DefaultTableModel tableModel;
+    // Tables
+    private final DefaultTableModel activityTableModel;
     private final JTable activityTable;
+
+    private final DefaultTableModel topTablesModel;
+    private final JTable topTablesTable;
+
+    private final DefaultTableModel historyTableModel;
+    private final JTable historyTable;
+
+    private final JTabbedPane detailsTabbedPane;
+
     private final JCheckBox autoRefreshBox = new JCheckBox("5 saniyede bir otomatik yenile", false);
     private final JButton refreshBtn = new JButton("Yenile");
     private final JButton testModeBtn = new JButton("Canlı Testi Başlat");
@@ -39,8 +50,10 @@ public class ServerStatusPanel extends JPanel {
     private int simulationStep = 0;
     private boolean isDark = false;
 
-    public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier) {
+    public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier, AuditHistoryManager auditManager) {
         this.settingsSupplier = settingsSupplier;
+        this.auditManager = auditManager;
+
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
         setOpaque(false);
@@ -87,7 +100,7 @@ public class ServerStatusPanel extends JPanel {
         topContainer.add(cardsGrid, BorderLayout.CENTER);
         add(topContainer, BorderLayout.NORTH);
 
-        // 2. Center Split: Left Chart (Transactions & Cache) | Right Activity Table (pg_stat_activity)
+        // 2. Center Split: Left Chart | Right 3-Tab Detailed Inspector
         JPanel centerContainer = new JPanel(new GridLayout(1, 2, 12, 0));
         centerContainer.setOpaque(false);
 
@@ -97,29 +110,71 @@ public class ServerStatusPanel extends JPanel {
         chartWrapper.add(chartPanel, BorderLayout.CENTER);
         centerContainer.add(chartWrapper);
 
-        // Right: Active Queries Table
-        JPanel tableWrapper = new JPanel(new BorderLayout(0, 4));
-        tableWrapper.setBorder(BorderFactory.createTitledBorder("Canlı Oturumlar & Sorgular (pg_stat_activity)"));
+        // Right: 3-Tab Detailed Inspector
+        detailsTabbedPane = new JTabbedPane();
 
-        String[] columns = {"PID", "Kullanıcı", "İstemci", "Durum", "Sorgu"};
-        tableModel = new DefaultTableModel(columns, 0) {
+        // --- Sub-Tab 1: Active Queries (pg_stat_activity) ---
+        String[] activityCols = {"PID", "Kullanıcı", "İstemci", "Durum", "Sorgu"};
+        activityTableModel = new DefaultTableModel(activityCols, 0) {
             @Override
-            public boolean isCellEditable(int row, int column) {
-                return false;
-            }
+            public boolean isCellEditable(int row, int column) { return false; }
         };
-        activityTable = new JTable(tableModel);
-        activityTable.setRowHeight(22);
-        activityTable.getTableHeader().setFont(activityTable.getTableHeader().getFont().deriveFont(Font.BOLD, 11f));
-        activityTable.getColumnModel().getColumn(0).setPreferredWidth(55);
-        activityTable.getColumnModel().getColumn(1).setPreferredWidth(80);
-        activityTable.getColumnModel().getColumn(2).setPreferredWidth(85);
-        activityTable.getColumnModel().getColumn(3).setPreferredWidth(65);
-        activityTable.getColumnModel().getColumn(4).setPreferredWidth(220);
+        activityTable = new JTable(activityTableModel);
+        setupTableStyle(activityTable);
+        detailsTabbedPane.addTab("Canlı Oturumlar (" + activityTableModel.getRowCount() + ")", new JScrollPane(activityTable));
 
-        tableWrapper.add(new JScrollPane(activityTable), BorderLayout.CENTER);
-        centerContainer.add(tableWrapper);
+        // --- Sub-Tab 2: Top Tables by Size ---
+        String[] tableCols = {"Tablo Adı", "Toplam Boyut", "Satır Sayısı (Yaklaşık)", "Şema"};
+        topTablesModel = new DefaultTableModel(tableCols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        topTablesTable = new JTable(topTablesModel);
+        setupTableStyle(topTablesTable);
+        detailsTabbedPane.addTab("Tablo Boyutları & Depolama", new JScrollPane(topTablesTable));
 
+        // --- Sub-Tab 3: Audit / Export History ---
+        String[] historyCols = {"Zaman", "Kullanıcı", "İşlem", "Detay", "Süre", "Durum"};
+        historyTableModel = new DefaultTableModel(historyCols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        historyTable = new JTable(historyTableModel);
+        setupTableStyle(historyTable);
+
+        // Status column color renderer (Green for SUCCESS, Red for ERROR)
+        historyTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel c = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                String val = String.valueOf(value);
+                if ("BAŞARILI".equalsIgnoreCase(val)) {
+                    c.setForeground(new Color(22, 163, 74));
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                } else if ("HATA".equalsIgnoreCase(val)) {
+                    c.setForeground(new Color(220, 38, 38));
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                }
+                return c;
+            }
+        });
+
+        JPanel historyTabPanel = new JPanel(new BorderLayout(0, 4));
+        historyTabPanel.add(new JScrollPane(historyTable), BorderLayout.CENTER);
+
+        JButton clearHistoryBtn = new JButton("Geçmişi Temizle");
+        clearHistoryBtn.setFont(clearHistoryBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        clearHistoryBtn.addActionListener(e -> {
+            auditManager.clearHistory();
+            loadAuditHistory();
+        });
+        JPanel historyFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        historyFooter.add(clearHistoryBtn);
+        historyTabPanel.add(historyFooter, BorderLayout.SOUTH);
+
+        detailsTabbedPane.addTab("İşlem & Düzenleme Geçmişi", historyTabPanel);
+
+        centerContainer.add(detailsTabbedPane);
         add(centerContainer, BorderLayout.CENTER);
 
         // Timer for auto-refresh
@@ -129,6 +184,13 @@ public class ServerStatusPanel extends JPanel {
             }
         });
         autoRefreshTimer.start();
+        loadAuditHistory();
+    }
+
+    private void setupTableStyle(JTable table) {
+        table.setRowHeight(24);
+        table.getTableHeader().setFont(table.getTableHeader().getFont().deriveFont(Font.BOLD, 11f));
+        table.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
     }
 
     private JPanel createKpiCard(String title, JLabel mainLabel, JLabel subLabel) {
@@ -155,6 +217,15 @@ public class ServerStatusPanel extends JPanel {
         return card;
     }
 
+    public void loadAuditHistory() {
+        historyTableModel.setRowCount(0);
+        for (AuditHistoryManager.AuditEntry entry : auditManager.getEntries()) {
+            historyTableModel.addRow(new Object[]{
+                    entry.timestamp, entry.user, entry.action, entry.details, entry.duration, entry.status
+            });
+        }
+    }
+
     private void toggleSimulationTest() {
         if (isSimulationRunning) {
             stopSimulationTest();
@@ -169,12 +240,11 @@ public class ServerStatusPanel extends JPanel {
         simulationStep = 0;
         testModeBtn.setText("Testi Durdur");
 
-        // Simulation Test Scenario: 10 dynamic live load states
         simulationTimer = new Timer(900, e -> {
             simulationStep++;
             runSimulationStep(simulationStep);
             if (simulationStep >= 12) {
-                simulationStep = 0; // loop seamlessly
+                simulationStep = 0;
             }
         });
         simulationTimer.start();
@@ -206,62 +276,34 @@ public class ServerStatusPanel extends JPanel {
         long blksRead;
         String dbSize;
 
-        tableModel.setRowCount(0);
+        activityTableModel.setRowCount(0);
 
         switch (step % 4) {
-            case 0: // Normal Baseline Load
-                activeConns = 8;
-                commits = 1250;
-                rollbacks = 4;
-                blksHit = 84500;
-                blksRead = 950;
-                dbSize = "42.5 MB";
-                tableModel.addRow(new Object[]{1012, "postgres", "127.0.0.1", "active", "SELECT * FROM public.products ORDER BY id LIMIT 50"});
-                tableModel.addRow(new Object[]{1015, "app_user", "192.168.1.20", "idle", "COMMIT"});
-                tableModel.addRow(new Object[]{1018, "report_svc", "192.168.1.35", "active", "SELECT count(*), avg(price) FROM products"});
+            case 0:
+                activeConns = 8; commits = 1250; rollbacks = 4; blksHit = 84500; blksRead = 950; dbSize = "42.5 MB";
+                activityTableModel.addRow(new Object[]{1012, "postgres", "127.0.0.1", "active", "SELECT * FROM public.products ORDER BY id LIMIT 50"});
+                activityTableModel.addRow(new Object[]{1015, "app_user", "192.168.1.20", "idle", "COMMIT"});
+                activityTableModel.addRow(new Object[]{1018, "report_svc", "192.168.1.35", "active", "SELECT count(*), avg(price) FROM products"});
                 break;
-
-            case 1: // Moderate Traffic Surge
-                activeConns = 38;
-                commits = 4820;
-                rollbacks = 32;
-                blksHit = 142000;
-                blksRead = 3400;
-                dbSize = "45.1 MB";
-                tableModel.addRow(new Object[]{1024, "api_gateway", "10.0.0.5", "active", "INSERT INTO orders (product_id, amount) VALUES (42, 3)"});
-                tableModel.addRow(new Object[]{1028, "api_gateway", "10.0.0.6", "active", "UPDATE products SET stock = stock - 1 WHERE id = 42"});
-                tableModel.addRow(new Object[]{1031, "postgres", "127.0.0.1", "active", "SELECT pg_stat_activity.pid, query FROM pg_stat_activity"});
-                tableModel.addRow(new Object[]{1035, "analytics", "10.0.0.99", "active", "SELECT category, sum(price) FROM products GROUP BY category"});
-                tableModel.addRow(new Object[]{1040, "app_user", "192.168.1.20", "idle", "RELEASE SAVEPOINT sp1"});
+            case 1:
+                activeConns = 38; commits = 4820; rollbacks = 32; blksHit = 142000; blksRead = 3400; dbSize = "45.1 MB";
+                activityTableModel.addRow(new Object[]{1024, "api_gateway", "10.0.0.5", "active", "INSERT INTO orders (product_id, amount) VALUES (42, 3)"});
+                activityTableModel.addRow(new Object[]{1028, "api_gateway", "10.0.0.6", "active", "UPDATE products SET stock = stock - 1 WHERE id = 42"});
+                activityTableModel.addRow(new Object[]{1031, "postgres", "127.0.0.1", "active", "SELECT pg_stat_activity.pid, query FROM pg_stat_activity"});
+                activityTableModel.addRow(new Object[]{1035, "analytics", "10.0.0.99", "active", "SELECT category, sum(price) FROM products GROUP BY category"});
                 break;
-
-            case 2: // High Load / Peak Activity (Amber Warning Level)
-                activeConns = 76;
-                commits = 12450;
-                rollbacks = 240;
-                blksHit = 280000;
-                blksRead = 14500;
-                dbSize = "52.8 MB";
-                tableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
-                tableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
-                tableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
-                tableModel.addRow(new Object[]{1065, "etl_worker", "10.0.2.14", "active", "COPY products_archive TO STDOUT WITH CSV"});
-                tableModel.addRow(new Object[]{1070, "web_client", "192.168.1.102", "active", "SELECT json_agg(p) FROM products p"});
-                tableModel.addRow(new Object[]{1075, "admin", "127.0.0.1", "idle in tx", "UPDATE settings SET maintenance = true"});
+            case 2:
+                activeConns = 76; commits = 12450; rollbacks = 240; blksHit = 280000; blksRead = 14500; dbSize = "52.8 MB";
+                activityTableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
+                activityTableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
+                activityTableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
+                activityTableModel.addRow(new Object[]{1065, "etl_worker", "10.0.2.14", "active", "COPY products_archive TO STDOUT WITH CSV"});
                 break;
-
-            default: // Stress Load (Red Level Gauge Demo)
-                activeConns = 94;
-                commits = 28400;
-                rollbacks = 1250;
-                blksHit = 510000;
-                blksRead = 48000;
-                dbSize = "68.4 MB";
-                tableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
-                tableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
-                tableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
-                tableModel.addRow(new Object[]{1095, "dba_user", "127.0.0.1", "active", "SELECT pg_cancel_backend(1090)"});
-                tableModel.addRow(new Object[]{1100, "indexer", "10.0.3.5", "active", "REINDEX TABLE public.products"});
+            default:
+                activeConns = 94; commits = 28400; rollbacks = 1250; blksHit = 510000; blksRead = 48000; dbSize = "68.4 MB";
+                activityTableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
+                activityTableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
+                activityTableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
                 break;
         }
 
@@ -275,8 +317,8 @@ public class ServerStatusPanel extends JPanel {
         cacheHitValueLabel.setForeground(cacheHitRatio > 90 ? new Color(22, 163, 74) : new Color(217, 119, 6));
 
         txStatsLabel.setText("Commit: " + commits + " | Rollback: " + rollbacks);
+        detailsTabbedPane.setTitleAt(0, "Canlı Oturumlar (" + activityTableModel.getRowCount() + ")");
 
-        // Animate Charts
         chartPanel.updateData(commits, rollbacks, blksHit, blksRead, activeConns, maxConns, isDark);
     }
 
@@ -284,6 +326,7 @@ public class ServerStatusPanel extends JPanel {
         PostgresqlConfigurationSettings settings = settingsSupplier.get();
         if (settings == null) return;
 
+        loadAuditHistory();
         refreshBtn.setEnabled(false);
         new SwingWorker<Void, Void>() {
             private String serverVersion = "--";
@@ -297,6 +340,7 @@ public class ServerStatusPanel extends JPanel {
             private long blksRead = 0;
             private boolean isOnline = false;
             private final java.util.List<Object[]> sessionRows = new java.util.ArrayList<>();
+            private final java.util.List<Object[]> tableRows = new java.util.ArrayList<>();
 
             @Override
             protected Void doInBackground() {
@@ -345,11 +389,7 @@ public class ServerStatusPanel extends JPanel {
                             blksHit = rs.getLong("blks_hit");
 
                             long totalBlks = blksHit + blksRead;
-                            if (totalBlks > 0) {
-                                cacheHitRatio = ((double) blksHit / totalBlks) * 100.0;
-                            } else {
-                                cacheHitRatio = 100.0;
-                            }
+                            cacheHitRatio = (totalBlks > 0) ? (((double) blksHit / totalBlks) * 100.0) : 100.0;
                         }
                     }
 
@@ -371,6 +411,23 @@ public class ServerStatusPanel extends JPanel {
                         }
                     }
 
+                    // 7. Top Tables by Size
+                    try (ResultSet rs = stmt.executeQuery(
+                            "SELECT c.relname, pg_size_pretty(pg_total_relation_size(c.oid)) AS total_size, " +
+                            "c.reltuples::bigint AS row_estimate, n.nspname " +
+                            "FROM pg_class c " +
+                            "JOIN pg_namespace n ON n.oid = c.relnamespace " +
+                            "WHERE relkind = 'r' AND n.nspname NOT IN ('pg_catalog', 'information_schema') " +
+                            "ORDER BY pg_total_relation_size(c.oid) DESC LIMIT 15")) {
+                        while (rs.next()) {
+                            String tblName = rs.getString("relname");
+                            String sizeStr = rs.getString("total_size");
+                            long rowCount = rs.getLong("row_estimate");
+                            String schema = rs.getString("nspname");
+                            tableRows.add(new Object[]{tblName, sizeStr, rowCount >= 0 ? rowCount : 0, schema});
+                        }
+                    }
+
                 } catch (Exception ex) {
                     isOnline = false;
                 }
@@ -385,7 +442,7 @@ public class ServerStatusPanel extends JPanel {
 
                 if (isOnline) {
                     statusValueLabel.setText("Çevrimiçi");
-                    statusValueLabel.setForeground(new Color(22, 163, 74)); // Green
+                    statusValueLabel.setForeground(new Color(22, 163, 74));
                     versionLabel.setText(serverVersion);
 
                     int pct = (int) Math.round(((double) activeConns / maxConns) * 100.0);
@@ -398,18 +455,25 @@ public class ServerStatusPanel extends JPanel {
 
                     chartPanel.updateData(commits, rollbacks, blksHit, blksRead, activeConns, maxConns, isDark);
 
-                    tableModel.setRowCount(0);
+                    activityTableModel.setRowCount(0);
                     for (Object[] row : sessionRows) {
-                        tableModel.addRow(row);
+                        activityTableModel.addRow(row);
+                    }
+                    detailsTabbedPane.setTitleAt(0, "Canlı Oturumlar (" + activityTableModel.getRowCount() + ")");
+
+                    topTablesModel.setRowCount(0);
+                    for (Object[] row : tableRows) {
+                        topTablesModel.addRow(row);
                     }
                 } else {
                     statusValueLabel.setText("Bağlantı Yok");
-                    statusValueLabel.setForeground(new Color(220, 38, 38)); // Red
+                    statusValueLabel.setForeground(new Color(220, 38, 38));
                     versionLabel.setText("Erişilemedi");
                     connectionsValueLabel.setText("-- / --");
                     dbSizeValueLabel.setText("--");
                     cacheHitValueLabel.setText("--");
-                    tableModel.setRowCount(0);
+                    activityTableModel.setRowCount(0);
+                    topTablesModel.setRowCount(0);
                 }
             }
         }.execute();
@@ -418,15 +482,19 @@ public class ServerStatusPanel extends JPanel {
     public void applyTheme(boolean isDark) {
         this.isDark = isDark;
         chartPanel.setDark(isDark);
-        if (isDark) {
-            activityTable.setBackground(new Color(24, 26, 32));
-            activityTable.setForeground(new Color(230, 235, 245));
-            lastUpdateLabel.setForeground(new Color(160, 165, 175));
-        } else {
-            activityTable.setBackground(Color.WHITE);
-            activityTable.setForeground(new Color(30, 35, 45));
-            lastUpdateLabel.setForeground(new Color(100, 105, 115));
-        }
+        Color tableBg = isDark ? new Color(24, 26, 32) : Color.WHITE;
+        Color tableFg = isDark ? new Color(230, 235, 245) : new Color(30, 35, 45);
+
+        activityTable.setBackground(tableBg);
+        activityTable.setForeground(tableFg);
+
+        topTablesTable.setBackground(tableBg);
+        topTablesTable.setForeground(tableFg);
+
+        historyTable.setBackground(tableBg);
+        historyTable.setForeground(tableFg);
+
+        lastUpdateLabel.setForeground(isDark ? new Color(160, 165, 175) : new Color(100, 105, 115));
     }
 
     // Custom Java2D Metrics Chart Component
@@ -472,7 +540,6 @@ public class ServerStatusPanel extends JPanel {
             Color subColor = isDark ? new Color(150, 155, 165) : new Color(110, 115, 125);
             Color trackBg = isDark ? new Color(35, 38, 48) : new Color(230, 234, 240);
 
-            // Left Metric: Transactions (Commit vs Rollback Bar)
             int halfW = (width - 40) / 2;
             int startY = 24;
 
@@ -489,7 +556,7 @@ public class ServerStatusPanel extends JPanel {
             g2.fillRoundRect(16, startY + 8, halfW, 20, 8, 8);
 
             int commitBarW = (int) Math.round((commitPct / 100.0) * halfW);
-            g2.setColor(new Color(34, 197, 94)); // Emerald Green
+            g2.setColor(new Color(34, 197, 94));
             g2.fillRoundRect(16, startY + 8, commitBarW, 20, 8, 8);
 
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
@@ -509,7 +576,7 @@ public class ServerStatusPanel extends JPanel {
             g2.fillRoundRect(16, secondY + 8, halfW, 20, 8, 8);
 
             int hitBarW = (int) Math.round((hitPct / 100.0) * halfW);
-            g2.setColor(new Color(59, 130, 246)); // Crisp Blue
+            g2.setColor(new Color(59, 130, 246));
             g2.fillRoundRect(16, secondY + 8, hitBarW, 20, 8, 8);
 
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
@@ -526,18 +593,15 @@ public class ServerStatusPanel extends JPanel {
             int gaugeX = rightX + (halfW - gaugeSize) / 2;
             int gaugeY = startY + 16;
 
-            // Background Ring
             g2.setStroke(new BasicStroke(12, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
             g2.setColor(trackBg);
             g2.drawArc(gaugeX, gaugeY, gaugeSize, gaugeSize, 0, 360);
 
-            // Filled Arc
             double connPct = maxConns > 0 ? ((double) activeConns / maxConns) : 0.05;
             int arcAngle = (int) Math.round(connPct * 360.0);
             g2.setColor(connPct < 0.7 ? new Color(34, 197, 94) : (connPct < 0.9 ? new Color(245, 158, 11) : new Color(239, 68, 68)));
             g2.drawArc(gaugeX, gaugeY, gaugeSize, gaugeSize, 90, -arcAngle);
 
-            // Centered Percentage
             g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
             g2.setColor(textColor);
             String centerTxt = "%" + (int) Math.round(connPct * 100);
