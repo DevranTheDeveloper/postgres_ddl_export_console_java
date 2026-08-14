@@ -13,6 +13,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JdbcDdlExtractor implements IDdlExtractor {
+    private int exportedCount = 0;
     private final PostgresqlConfigurationSettings settings;
     private final IWriter writer;
     private final ILogger logger;
@@ -43,6 +44,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
             extractTriggers(conn);
 
             logger.log("JDBC DDL Aktarım İşlemi Tamamlandı.");
+            logger.log("🎉 Toplam " + exportedCount + " adet veritabanı nesnesi dışa aktarıldı!");
 
         } catch (SQLException e) {
             throw new RuntimeException("JDBC ile DDL çıkarma hatası: " + e.getMessage(), e);
@@ -54,7 +56,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "WHERE nspname NOT LIKE 'pg_%' AND nspname != 'information_schema' ORDER BY nspname";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("nspname");
                 String ddl = "CREATE SCHEMA IF NOT EXISTS " + quoteIdentifier(schema) + ";";
@@ -72,7 +74,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY n.nspname, t.typname, e.enumsortorder";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             String currentType = null;
             String currentSchema = null;
             List<String> enumLabels = new ArrayList<>();
@@ -104,7 +106,8 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 .append(" AS ENUM (\n");
         for (int i = 0; i < labels.size(); i++) {
             sb.append("  '").append(labels.get(i).replace("'", "''")).append("'");
-            if (i < labels.size() - 1) sb.append(",");
+            if (i < labels.size() - 1)
+                sb.append(",");
             sb.append("\n");
         }
         sb.append(");");
@@ -118,7 +121,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY sequence_schema, sequence_name";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("sequence_schema");
                 String seqName = rs.getString("sequence_name");
@@ -131,11 +134,12 @@ public class JdbcDdlExtractor implements IDdlExtractor {
 
     private void extractTables(Connection conn) throws SQLException {
         String sql = "SELECT table_schema, table_name FROM information_schema.tables " +
-                "WHERE table_type = 'BASE TABLE' AND table_schema NOT LIKE 'pg_%' AND table_schema != 'information_schema' " +
+                "WHERE table_type = 'BASE TABLE' AND table_schema NOT LIKE 'pg_%' AND table_schema != 'information_schema' "
+                +
                 "ORDER BY table_schema, table_name";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("table_schema");
                 String tableName = rs.getString("table_name");
@@ -155,7 +159,8 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY ordinal_position";
 
         StringBuilder sb = new StringBuilder();
-        sb.append("CREATE TABLE ").append(quoteIdentifier(schema)).append(".").append(quoteIdentifier(tableName)).append(" (\n");
+        sb.append("CREATE TABLE ").append(quoteIdentifier(schema)).append(".").append(quoteIdentifier(tableName))
+                .append(" (\n");
 
         try (PreparedStatement stmt = conn.prepareStatement(colSql)) {
             stmt.setString(1, schema);
@@ -163,7 +168,8 @@ public class JdbcDdlExtractor implements IDdlExtractor {
             try (ResultSet rs = stmt.executeQuery()) {
                 boolean first = true;
                 while (rs.next()) {
-                    if (!first) sb.append(",\n");
+                    if (!first)
+                        sb.append(",\n");
                     first = false;
 
                     String colName = rs.getString("column_name");
@@ -172,7 +178,8 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                     String isNullable = rs.getString("is_nullable");
                     String colDefault = rs.getString("column_default");
 
-                    sb.append("  ").append(quoteIdentifier(colName)).append(" ").append(dataType.toUpperCase(java.util.Locale.ROOT));
+                    sb.append("  ").append(quoteIdentifier(colName)).append(" ")
+                            .append(dataType.toUpperCase(java.util.Locale.ROOT));
                     if (maxLen > 0) {
                         sb.append("(").append(maxLen).append(")");
                     }
@@ -198,7 +205,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY n.nspname, c.relname";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("view_schema");
                 String viewName = rs.getString("view_name");
@@ -220,7 +227,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY n.nspname, p.proname";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("nspname");
                 String name = rs.getString("proname");
@@ -239,7 +246,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY schemaname, indexname";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("schemaname");
                 String indexName = rs.getString("indexname");
@@ -259,7 +266,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
                 "ORDER BY n.nspname, t.tgname";
 
         try (PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
+                ResultSet rs = stmt.executeQuery()) {
             while (rs.next()) {
                 String schema = rs.getString("nspname");
                 String triggerName = rs.getString("tgname");
@@ -274,11 +281,13 @@ public class JdbcDdlExtractor implements IDdlExtractor {
         writer.start(settings.getDatabaseName(), type, nameWithSchema);
         writer.writeLine(ddl);
         writer.finish();
+        exportedCount++;
         logger.log("Dışa aktarıldı (JDBC): [" + type + "] " + nameWithSchema);
     }
 
     private String quoteIdentifier(String id) {
-        if (id == null) return "\"\"";
+        if (id == null)
+            return "\"\"";
         return "\"" + id.replace("\"", "\"\"") + "\"";
     }
 }
