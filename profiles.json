@@ -9,10 +9,10 @@
     "pgDumpPath" : "pg_dump",
     "pgRestorePath" : "pg_restore"
   },
-  "deneme" : {
+  "Staging Shop DB (5432)" : {
     "serverHost" : "localhost",
     "port" : 5432,
-    "databaseName" : "denemeDatabase",
+    "databaseName" : "staging_shop_db",
     "username" : "postgres",
     "password" : "12345",
     "schema" : "public",
