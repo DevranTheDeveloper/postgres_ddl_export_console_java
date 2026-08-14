@@ -305,24 +305,31 @@ public class ServerStatusPanel extends JPanel {
     }
 
     public void updateDiagnosticsUi() {
-        int errs = diagnosticsManager.getErrorCount();
-        int warns = diagnosticsManager.getWarningCount();
+        int activeErrs = diagnosticsManager.getActiveErrorCount();
+        int activeWarns = diagnosticsManager.getActiveWarningCount();
+        int resolvedCount = diagnosticsManager.getResolvedIssues().size();
 
-        diagnosticsValueLabel.setText(errs + " Hata | " + warns + " Uyarı");
-        if (errs > 0) {
+        diagnosticsValueLabel.setText(activeErrs + " Hata | " + activeWarns + " Uyarı");
+        if (activeErrs > 0) {
             diagnosticsValueLabel.setForeground(new Color(220, 38, 38));
-        } else if (warns > 0) {
+        } else if (activeWarns > 0) {
             diagnosticsValueLabel.setForeground(new Color(217, 119, 6));
         } else {
             diagnosticsValueLabel.setForeground(new Color(22, 163, 74));
         }
 
-        detailsTabbedPane.setTitleAt(3, "Uyarı & Hatalar (" + (errs + warns) + ")");
+        if (resolvedCount > 0) {
+            diagnosticsSubLabel.setText("Detaylar ↗ (Çözülen: " + resolvedCount + ")");
+        } else {
+            diagnosticsSubLabel.setText("Detaylar için tıklayın ↗");
+        }
+
+        detailsTabbedPane.setTitleAt(3, "Uyarı & Hatalar (" + (activeErrs + activeWarns) + ")");
 
         diagnosticsTableModel.setRowCount(0);
-        for (SystemDiagnosticsManager.DiagnosticIssue issue : diagnosticsManager.getIssues()) {
+        for (SystemDiagnosticsManager.DiagnosticIssue issue : diagnosticsManager.getAllIssues()) {
             diagnosticsTableModel.addRow(new Object[]{
-                    issue.level == SystemDiagnosticsManager.Level.ERROR ? "KRİTİK HATA" : "UYARI",
+                    issue.resolved ? "Çözüldü" : (issue.level == SystemDiagnosticsManager.Level.ERROR ? "KRİTİK HATA" : "UYARI"),
                     issue.timestamp,
                     issue.title,
                     issue.source
@@ -409,7 +416,7 @@ public class ServerStatusPanel extends JPanel {
                 activityTableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
                 activityTableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
                 activityTableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
-                if (diagnosticsManager.getWarningCount() == 0) {
+                if (diagnosticsManager.getActiveWarningCount() == 0) {
                     diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.WARN,
                             "'customers_archive' tablosunda Primary Key eksik",
                             "DDL Scripter Motoru",
@@ -422,7 +429,7 @@ public class ServerStatusPanel extends JPanel {
                 activityTableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
                 activityTableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
                 activityTableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
-                if (diagnosticsManager.getErrorCount() == 0) {
+                if (diagnosticsManager.getActiveErrorCount() == 0) {
                     diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
                             "Bağlantı Havuzu Kritik Doluluk Seviyesinde (%94)",
                             "PostgreSQL Bağlantı Havuzu",
