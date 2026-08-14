@@ -53,7 +53,8 @@ public class MainFrame extends JFrame {
     private final JLabel titleLabel;
     private final JPanel statusBar;
 
-    private boolean isDarkMode = false; // Default: Clean Light Theme
+    private static final String PREF_FILE = "user_preferences.json";
+    private boolean isDarkMode;
     private boolean isLogVisible = true;
 
     public MainFrame() {
@@ -63,6 +64,7 @@ public class MainFrame extends JFrame {
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("apple.awt.application.name", "PostgreSQL DDL Studio");
 
+        this.isDarkMode = loadSavedThemePreference();
         initLookAndFeel(isDarkMode);
         initAppIcon();
 
@@ -123,7 +125,7 @@ public class MainFrame extends JFrame {
         topHeader = new JPanel(new BorderLayout(16, 0));
         profileLabel = new JLabel("Profil:");
         titleLabel = new JLabel("PostgreSQL DDL Export Studio");
-        themeToggleBtn = new JButton("Koyu Tema");
+        themeToggleBtn = new JButton(isDarkMode ? "Açık Tema" : "Koyu Tema");
 
         setupTopHeader();
 
@@ -309,8 +311,31 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private static boolean loadSavedThemePreference() {
+        try {
+            File f = new File(PREF_FILE);
+            if (f.exists()) {
+                String content = java.nio.file.Files.readString(f.toPath());
+                if (content.contains("\"darkMode\": true") || content.contains("\"darkMode\":true")) {
+                    return true;
+                } else if (content.contains("\"darkMode\": false") || content.contains("\"darkMode\":false")) {
+                    return false;
+                }
+            }
+        } catch (Exception ignored) {}
+        return true;
+    }
+
+    private static void saveThemePreference(boolean dark) {
+        try {
+            String json = "{\n  \"darkMode\": " + dark + "\n}\n";
+            java.nio.file.Files.writeString(new File(PREF_FILE).toPath(), json);
+        } catch (Exception ignored) {}
+    }
+
     private void toggleTheme() {
         isDarkMode = !isDarkMode;
+        saveThemePreference(isDarkMode);
         themeToggleBtn.setText(isDarkMode ? "Açık Tema" : "Koyu Tema");
         initLookAndFeel(isDarkMode);
         SwingUtilities.updateComponentTreeUI(this);
