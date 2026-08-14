@@ -15,6 +15,7 @@ import java.util.List;
 
 public class MainFrame extends JFrame {
     private static final String CARD_SCHEMA = "SCHEMA";
+    private static final String CARD_ERD = "ERD";
     private static final String CARD_SETTINGS = "SETTINGS";
     private static final String CARD_DIFF = "DIFF";
     private static final String CARD_GIT = "GIT";
@@ -27,6 +28,7 @@ public class MainFrame extends JFrame {
 
     private final ConnectionPanel connectionPanel;
     private final SchemaExplorerPanel schemaExplorerPanel;
+    private final ErDiagramPanel erDiagramPanel;
     private final DiffViewerPanel diffViewerPanel;
     private final GitSyncPanel gitSyncPanel;
     private final ServerStatusPanel serverStatusPanel;
@@ -34,7 +36,7 @@ public class MainFrame extends JFrame {
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentCards = new JPanel(cardLayout);
-    private final JPanel navTabBar = new JPanel(new GridLayout(1, 5, 0, 0));
+    private final JPanel navTabBar = new JPanel(new GridLayout(1, 6, 0, 0));
     private final List<JButton> tabButtons = new ArrayList<>();
     private String currentCard = CARD_SCHEMA;
 
@@ -67,15 +69,17 @@ public class MainFrame extends JFrame {
         // Sub-Panels
         connectionPanel = new ConnectionPanel(this::startExportProcess);
         schemaExplorerPanel = new SchemaExplorerPanel();
+        erDiagramPanel = new ErDiagramPanel();
         serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager, diagnosticsManager);
         diffViewerPanel = new DiffViewerPanel(profileManager);
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
 
-        // Connect SQL save events to sync Diff, Git, and Audit Log
+        // Connect SQL save events to sync Diff, ERD, Git, and Audit Log
         schemaExplorerPanel.setOnFileSavedListener(() -> {
             String outDir = connectionPanel.getOutputDir();
             diffViewerPanel.setExportDir(outDir);
+            erDiagramPanel.setExportDir(outDir);
             gitSyncPanel.refreshGitStatus();
             PostgresqlConfigurationSettings s = connectionPanel.getSettingsFromUi();
             auditManager.logAction("SQL Dosyası Düzenlendi", s.getUsername(), s.getDatabaseName(), "Şema Gezgininden dosya kaydedildi", 0, true);
@@ -105,6 +109,7 @@ public class MainFrame extends JFrame {
 
         // 2. Center Content Cards (CardLayout seamlessly attached to tab bar)
         contentCards.add(schemaExplorerPanel, CARD_SCHEMA);
+        contentCards.add(erDiagramPanel, CARD_ERD);
         contentCards.add(connectionPanel, CARD_SETTINGS);
         contentCards.add(serverStatusPanel, CARD_METRICS);
         contentCards.add(diffViewerPanel, CARD_DIFF);
@@ -193,6 +198,7 @@ public class MainFrame extends JFrame {
         tabButtons.clear();
 
         tabButtons.add(createTabButton("Şema & SQL Gezgini", CARD_SCHEMA));
+        tabButtons.add(createTabButton("İlişki Haritası (ERD)", CARD_ERD));
         tabButtons.add(createTabButton("Bağlantı Ayarları", CARD_SETTINGS));
         tabButtons.add(createTabButton("Sunucu Durumu", CARD_METRICS));
         tabButtons.add(createTabButton("Şema Farkı (Diff)", CARD_DIFF));
@@ -291,6 +297,7 @@ public class MainFrame extends JFrame {
 
         updateTabBarStyles();
         schemaExplorerPanel.applyTheme(dark);
+        erDiagramPanel.applyTheme(dark);
         serverStatusPanel.applyTheme(dark);
         logPanel.applyTheme(dark);
         diffViewerPanel.applyTheme(dark);
@@ -317,6 +324,7 @@ public class MainFrame extends JFrame {
         int count = 0;
         if (exportDir.exists()) {
             schemaExplorerPanel.loadExportDirectory(exportDir.getAbsolutePath());
+            erDiagramPanel.setExportDir(exportDir.getAbsolutePath());
             diffViewerPanel.setExportDir(exportDir.getAbsolutePath());
             File[] files = exportDir.listFiles((dir, name) -> name.endsWith(".sql"));
             if (files != null) count = files.length;
@@ -493,6 +501,7 @@ public class MainFrame extends JFrame {
                     logPanel.setProgress(100, "DDL Aktarımı Başarıyla Tamamlandı!");
                     statusLabel.setText("DDL Başarıyla Aktarıldı! (" + outputDir + ")");
                     schemaExplorerPanel.loadExportDirectory(outputDir);
+                    erDiagramPanel.setExportDir(outputDir);
                     diffViewerPanel.setExportDir(outputDir);
                     gitSyncPanel.refreshGitStatus();
                     selectTab(CARD_SCHEMA);
