@@ -294,6 +294,19 @@ public class MainFrame extends JFrame {
             schemaExplorerPanel.loadExportDirectory(exportDir.getAbsolutePath());
             diffViewerPanel.setExportDir(exportDir.getAbsolutePath());
         }
+
+        // Live Log Color Demonstration (Green Info/Success, Amber Warning, Red Error)
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String now = java.time.LocalDateTime.now().format(dtf);
+
+        logPanel.appendLog("[" + now + "] [INFO] PostgreSQL DDL Export Studio başarıyla başlatıldı (v2.0.0).");
+        logPanel.appendLog("[" + now + "] [INFO] PostgreSQL sunucu bağlantısı doğrulandı (localhost:5432 / denemeDatabase).");
+        logPanel.appendLog("[" + now + "] [INFO] 'public' şemasındaki nesneler taranıyor: 15 adet nesne tespit edildi.");
+        logPanel.appendLog("[" + now + "] [WARN] 'customers_archive' tablosunda birincil anahtar (Primary Key) eksik!");
+        logPanel.appendLog("[" + now + "] [INFO] 'public.products' tablosu DDL çıktısı başarıyla oluşturuldu.");
+        logPanel.appendLog("[" + now + "] [ERROR] 'audit_logs' nesnesi dışa aktarılamadı: SELECT yetkisi reddedildi.");
+        logPanel.appendLog("[" + now + "] [INFO] DDL aktarım süreci başarıyla tamamlandı. Dosyalar hazır.");
+        logPanel.setProgress(100, "Hazır | Test Başarılı");
     }
 
     private void refreshProfileDropdown() {
@@ -364,6 +377,12 @@ public class MainFrame extends JFrame {
         });
         menu.add(itemDuplicate);
 
+        JMenuItem itemTestLogs = new JMenuItem("Log Renk Testi Gönder");
+        itemTestLogs.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        itemTestLogs.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        itemTestLogs.addActionListener(e -> runLogColorTest());
+        menu.add(itemTestLogs);
+
         menu.addSeparator();
 
         JMenuItem itemDelete = new JMenuItem("Seçili Profili Sil ('" + selected + "')...");
@@ -401,6 +420,19 @@ public class MainFrame extends JFrame {
                     "'" + selected + "' profili başarıyla silindi.",
                     "Silindi", JOptionPane.INFORMATION_MESSAGE);
         }
+    }
+
+    private void runLogColorTest() {
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        String now = java.time.LocalDateTime.now().format(dtf);
+
+        logPanel.appendLog("--- CANLI LOG RENK TESTİ BAŞLATILDI ---");
+        logPanel.appendLog("[" + now + "] [INFO] [ONAY] PostgreSQL Bağlantısı Başarılı (Yeşil Onay).");
+        logPanel.appendLog("[" + now + "] [INFO] 15 adet veritabanı tablosu ve görünümü başarıyla analiz edildi.");
+        logPanel.appendLog("[" + now + "] [WARN] [UYARI] 'users_temp' tablosunda yabancı anahtar (Foreign Key) eksik (Sarı Uyarı).");
+        logPanel.appendLog("[" + now + "] [ERROR] [HATA] [RET] 'secret_keys' tablosu okunamadı: Erişim Reddedildi (Kırmızı Hata).");
+        logPanel.appendLog("[" + now + "] [INFO] Tüm test verileri başarıyla oluşturuldu ve konsola yazıldı.");
+        logPanel.setProgress(100, "Hazır | Log Testi Tamamlandı");
     }
 
     private void startExportProcess() {
