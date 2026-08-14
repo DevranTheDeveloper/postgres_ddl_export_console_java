@@ -12,6 +12,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Supplier;
 
 public class ServerStatusPanel extends JPanel {
@@ -57,6 +59,25 @@ public class ServerStatusPanel extends JPanel {
     private boolean isSimulationRunning = false;
     private int simulationStep = 0;
     private boolean isDark = false;
+
+    private static class KpiCardView {
+        final JPanel panel;
+        final JLabel titleLabel;
+        final JLabel mainLabel;
+        final JLabel subLabel;
+        final Runnable onClick;
+        final boolean customMainColor;
+
+        KpiCardView(JPanel panel, JLabel titleLabel, JLabel mainLabel, JLabel subLabel, Runnable onClick, boolean customMainColor) {
+            this.panel = panel;
+            this.titleLabel = titleLabel;
+            this.mainLabel = mainLabel;
+            this.subLabel = subLabel;
+            this.onClick = onClick;
+            this.customMainColor = customMainColor;
+        }
+    }
+    private final List<KpiCardView> kpiCards = new ArrayList<>();
 
     public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier,
                              AuditHistoryManager auditManager,
@@ -250,23 +271,26 @@ public class ServerStatusPanel extends JPanel {
     private JPanel createKpiCard(String title, JLabel mainLabel, JLabel subLabel, Runnable onClick) {
         JPanel card = new JPanel(new BorderLayout(0, 4));
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
+                BorderFactory.createLineBorder(isDark ? new Color(55, 60, 72) : new Color(210, 215, 225), 1, true),
                 BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
-        card.setBackground(Color.WHITE);
+        card.setBackground(isDark ? new Color(34, 37, 46) : Color.WHITE);
 
         JLabel titleLbl = new JLabel(title);
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 11f));
-        titleLbl.setForeground(new Color(100, 105, 115));
+        titleLbl.setForeground(isDark ? new Color(160, 170, 185) : new Color(100, 105, 115));
         card.add(titleLbl, BorderLayout.NORTH);
 
         mainLabel.setFont(mainLabel.getFont().deriveFont(Font.BOLD, 16f));
-        mainLabel.setForeground(new Color(25, 30, 40));
+        mainLabel.setForeground(isDark ? new Color(240, 245, 255) : new Color(25, 30, 40));
         card.add(mainLabel, BorderLayout.CENTER);
 
         subLabel.setFont(subLabel.getFont().deriveFont(Font.PLAIN, 10f));
-        subLabel.setForeground(new Color(120, 125, 135));
+        subLabel.setForeground(isDark ? new Color(130, 135, 150) : new Color(120, 125, 135));
         card.add(subLabel, BorderLayout.SOUTH);
+
+        boolean isCustomColor = (mainLabel == statusValueLabel || mainLabel == cacheHitValueLabel || mainLabel == diagnosticsValueLabel);
+        kpiCards.add(new KpiCardView(card, titleLbl, mainLabel, subLabel, onClick, isCustomColor));
 
         if (onClick != null) {
             card.setCursor(new Cursor(Cursor.HAND_CURSOR));
@@ -287,7 +311,7 @@ public class ServerStatusPanel extends JPanel {
                 @Override
                 public void mouseExited(MouseEvent e) {
                     card.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
+                            BorderFactory.createLineBorder(isDark ? new Color(55, 60, 72) : new Color(210, 215, 225), 1, true),
                             BorderFactory.createEmptyBorder(8, 10, 8, 10)
                     ));
                 }
@@ -636,6 +660,26 @@ public class ServerStatusPanel extends JPanel {
     public void applyTheme(boolean isDark) {
         this.isDark = isDark;
         chartPanel.setDark(isDark);
+
+        Color cardBg = isDark ? new Color(34, 37, 46) : Color.WHITE;
+        Color cardBorder = isDark ? new Color(55, 60, 72) : new Color(210, 215, 225);
+        Color titleFg = isDark ? new Color(160, 170, 185) : new Color(100, 105, 115);
+        Color subFg = isDark ? new Color(130, 135, 150) : new Color(120, 125, 135);
+        Color defaultMainFg = isDark ? new Color(240, 245, 255) : new Color(25, 30, 40);
+
+        for (KpiCardView kpi : kpiCards) {
+            kpi.panel.setBackground(cardBg);
+            kpi.panel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(cardBorder, 1, true),
+                    BorderFactory.createEmptyBorder(8, 10, 8, 10)
+            ));
+            kpi.titleLabel.setForeground(titleFg);
+            kpi.subLabel.setForeground(subFg);
+            if (!kpi.customMainColor) {
+                kpi.mainLabel.setForeground(defaultMainFg);
+            }
+        }
+
         Color tableBg = isDark ? new Color(24, 26, 32) : Color.WHITE;
         Color tableFg = isDark ? new Color(230, 235, 245) : new Color(30, 35, 45);
 

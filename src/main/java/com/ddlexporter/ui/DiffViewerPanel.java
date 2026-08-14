@@ -41,6 +41,19 @@ public class DiffViewerPanel extends JPanel {
 
     private boolean isDark = false;
 
+    private static class MiniKpiCardView {
+        final JPanel panel;
+        final JLabel titleLabel;
+        final JLabel valueLabel;
+
+        MiniKpiCardView(JPanel panel, JLabel titleLabel, JLabel valueLabel) {
+            this.panel = panel;
+            this.titleLabel = titleLabel;
+            this.valueLabel = valueLabel;
+        }
+    }
+    private final java.util.List<MiniKpiCardView> miniKpiCards = new java.util.ArrayList<>();
+
     public DiffViewerPanel(ProfileManager profileManager) {
         this.profileManager = profileManager;
         setLayout(new BorderLayout());
@@ -276,19 +289,21 @@ public class DiffViewerPanel extends JPanel {
     private JPanel createMiniKpiCard(String title, JLabel valueLabel, Color valueColor) {
         JPanel card = new JPanel(new BorderLayout(0, 2));
         card.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
+                BorderFactory.createLineBorder(isDark ? new Color(55, 60, 72) : new Color(210, 215, 225), 1, true),
                 BorderFactory.createEmptyBorder(6, 10, 6, 10)
         ));
-        card.setBackground(Color.WHITE);
+        card.setBackground(isDark ? new Color(34, 37, 46) : Color.WHITE);
 
         JLabel titleLbl = new JLabel(title);
         titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 11f));
-        titleLbl.setForeground(new Color(100, 105, 115));
+        titleLbl.setForeground(isDark ? new Color(160, 170, 185) : new Color(100, 105, 115));
         card.add(titleLbl, BorderLayout.NORTH);
 
         valueLabel.setFont(valueLabel.getFont().deriveFont(Font.BOLD, 16f));
         valueLabel.setForeground(valueColor);
         card.add(valueLabel, BorderLayout.CENTER);
+
+        miniKpiCards.add(new MiniKpiCardView(card, titleLbl, valueLabel));
 
         return card;
     }
@@ -456,6 +471,19 @@ public class DiffViewerPanel extends JPanel {
         this.isDark = isDark;
         Color darkBg = new Color(24, 24, 27);
         Color darkFg = new Color(228, 228, 231);
+
+        Color cardBg = isDark ? new Color(34, 37, 46) : Color.WHITE;
+        Color cardBorder = isDark ? new Color(55, 60, 72) : new Color(210, 215, 225);
+        Color titleFg = isDark ? new Color(160, 170, 185) : new Color(100, 105, 115);
+
+        for (MiniKpiCardView mini : miniKpiCards) {
+            mini.panel.setBackground(cardBg);
+            mini.panel.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(cardBorder, 1, true),
+                    BorderFactory.createEmptyBorder(6, 10, 6, 10)
+            ));
+            mini.titleLabel.setForeground(titleFg);
+        }
 
         if (isDark) {
             leftTextArea.setBackground(darkBg);
