@@ -220,6 +220,14 @@ public class MainFrame extends JFrame {
         });
         rightControls.add(scheduleStatusBtn);
 
+        // Shortcuts & Help Guide Button
+        JButton shortcutsBtn = new JButton("Kısayollar");
+        shortcutsBtn.setFont(shortcutsBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        shortcutsBtn.setToolTipText("Klavye kısayolları ve kullanım ipuçları");
+        shortcutsBtn.setFocusable(false);
+        shortcutsBtn.addActionListener(e -> new HelpShortcutsDialog(this).setVisible(true));
+        rightControls.add(shortcutsBtn);
+
         // Theme Toggle Button
         themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
         themeToggleBtn.setFocusable(false);

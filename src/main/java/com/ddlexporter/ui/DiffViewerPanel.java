@@ -1,5 +1,6 @@
 package com.ddlexporter.ui;
 
+import com.ddlexporter.common.util.SqlFormatter;
 import com.ddlexporter.migration.EnvironmentDiffEngine;
 import com.ddlexporter.migration.MigrationScriptGenerator;
 import com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings;
@@ -115,6 +116,15 @@ public class DiffViewerPanel extends JPanel {
         migrationPanel.setBorder(BorderFactory.createTitledBorder("Otomatik Üretilen PostgreSQL Migration (ALTER) Scripti"));
 
         JPanel migrationToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+
+        JButton formatMigrationBtn = new JButton("Formatla");
+        formatMigrationBtn.setFont(formatMigrationBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        formatMigrationBtn.addActionListener(e -> {
+            String txt = migrationTextArea.getText();
+            if (txt != null && !txt.isBlank()) migrationTextArea.setText(SqlFormatter.formatSql(txt));
+        });
+        migrationToolbar.add(formatMigrationBtn);
+
         JButton copyMigrationBtn = new JButton("Migration SQL Kopyala");
         copyMigrationBtn.setFont(copyMigrationBtn.getFont().deriveFont(Font.BOLD, 11f));
         copyMigrationBtn.addActionListener(e -> copySqlToClipboard(migrationTextArea.getText(), "Migration scripti panoya kopyalandı!"));
@@ -229,6 +239,15 @@ public class DiffViewerPanel extends JPanel {
         envPatchPanel.setBorder(BorderFactory.createTitledBorder("Hedef Ortama Dağıtım (Deploy Patch) Scripti"));
 
         JPanel patchToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
+
+        JButton formatPatchBtn = new JButton("Formatla");
+        formatPatchBtn.setFont(formatPatchBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        formatPatchBtn.addActionListener(e -> {
+            String txt = envPatchTextArea.getText();
+            if (txt != null && !txt.isBlank()) envPatchTextArea.setText(SqlFormatter.formatSql(txt));
+        });
+        patchToolbar.add(formatPatchBtn);
+
         JButton copyPatchBtn = new JButton("Yamayı Kopyala");
         copyPatchBtn.setFont(copyPatchBtn.getFont().deriveFont(Font.BOLD, 11f));
         copyPatchBtn.addActionListener(e -> copySqlToClipboard(envPatchTextArea.getText(), "Dağıtım yaması panoya kopyalandı!"));

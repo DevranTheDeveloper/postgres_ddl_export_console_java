@@ -1,5 +1,8 @@
 package com.ddlexporter.ui;
 
+import com.ddlexporter.common.util.SqlFormatter;
+import com.ddlexporter.common.util.ZipArchiver;
+
 import javax.swing.*;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
@@ -79,10 +82,23 @@ public class SchemaExplorerPanel extends JPanel {
         discardBtn.addActionListener(e -> discardChanges());
         actionsPanel.add(discardBtn);
 
+        JButton formatBtn = new JButton("Formatla");
+        formatBtn.setFont(formatBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        formatBtn.setToolTipText("SQL kodunu büyük harfler ve standart girintilerle güzelleştir");
+        formatBtn.addActionListener(e -> formatCurrentSql());
+        actionsPanel.add(formatBtn);
+
         JButton copyBtn = new JButton("SQL Kopyala");
         copyBtn.setFont(copyBtn.getFont().deriveFont(Font.PLAIN, 12f));
         copyBtn.addActionListener(e -> copySqlToClipboard());
         actionsPanel.add(copyBtn);
+
+        JButton zipBtn = new JButton("ZIP Arşivle");
+        zipBtn.setFont(zipBtn.getFont().deriveFont(Font.BOLD, 12f));
+        zipBtn.setForeground(new Color(9, 105, 218));
+        zipBtn.setToolTipText("Tüm veritabanı şema çıktılarını tek bir .zip arşivi olarak kaydet");
+        zipBtn.addActionListener(e -> exportAsZip());
+        actionsPanel.add(zipBtn);
 
         topToolbar.add(actionsPanel, BorderLayout.EAST);
         add(topToolbar, BorderLayout.NORTH);
@@ -461,6 +477,49 @@ public class SchemaExplorerPanel extends JPanel {
         }
         if (tree.getRowCount() != rowCount) {
             expandAllNodes(tree, rowCount, tree.getRowCount());
+        }
+    }
+
+    private void formatCurrentSql() {
+        String currentText = sqlTextArea.getText();
+        if (currentText == null || currentText.isBlank()) return;
+
+        String formatted = SqlFormatter.formatSql(currentText);
+        sqlTextArea.setText(formatted);
+        sqlTextArea.setCaretPosition(0);
+        onTextChanged();
+    }
+
+    private void exportAsZip() {
+        if (currentExportDir == null || !currentExportDir.exists()) {
+            JOptionPane.showMessageDialog(this,
+                    "Arşivlenecek dışa aktarım klasörü bulunamadı. Lütfen önce 'Dışa Aktar' butonuna basın.",
+                    "Klasör Yok", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JFileChooser fileChooser = new JFileChooser();
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+        String defaultName = "database_schema_" + java.time.LocalDateTime.now().format(dtf) + ".zip";
+        fileChooser.setSelectedFile(new File(defaultName));
+
+        int res = fileChooser.showSaveDialog(this);
+        if (res == JFileChooser.APPROVE_OPTION) {
+            File targetZip = fileChooser.getSelectedFile();
+            if (!targetZip.getName().toLowerCase().endsWith(".zip")) {
+                targetZip = new File(targetZip.getParentFile(), targetZip.getName() + ".zip");
+            }
+
+            try {
+                ZipArchiver.zipDirectory(currentExportDir, targetZip);
+                JOptionPane.showMessageDialog(this,
+                        "Şema dosyaları başarıyla ZIP olarak paketlendi!\nKonum: " + targetZip.getAbsolutePath(),
+                        "ZIP Arşivlendi", JOptionPane.INFORMATION_MESSAGE);
+            } catch (Exception ex) {
+                JOptionPane.showMessageDialog(this,
+                        "ZIP arşivi oluşturulamadı: " + ex.getMessage(),
+                        "Hata", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
