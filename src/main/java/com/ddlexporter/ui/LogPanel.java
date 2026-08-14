@@ -49,4 +49,16 @@ public class LogPanel extends JPanel {
         progressBar.setValue(value);
         progressBar.setString(statusText);
     }
+
+    public void applyTheme(boolean isDark) {
+        if (isDark) {
+            logArea.setBackground(new Color(18, 18, 20));
+            logArea.setForeground(new Color(34, 197, 94)); // Emerald green
+            logArea.setCaretColor(Color.WHITE);
+        } else {
+            logArea.setBackground(new Color(248, 250, 252)); // Clean light slate
+            logArea.setForeground(new Color(15, 118, 110)); // Crisp teal
+            logArea.setCaretColor(Color.BLACK);
+        }
+    }
 }

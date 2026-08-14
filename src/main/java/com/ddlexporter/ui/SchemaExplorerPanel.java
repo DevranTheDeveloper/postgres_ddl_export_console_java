@@ -11,7 +11,6 @@ import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.nio.file.Files;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class SchemaExplorerPanel extends JPanel {
@@ -82,23 +81,18 @@ public class SchemaExplorerPanel extends JPanel {
 
         currentFileLabel = new JLabel(" Henüz bir nesne seçilmedi");
         currentFileLabel.setFont(currentFileLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        currentFileLabel.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
+        currentFileLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         sqlEditorPanel.add(currentFileLabel, BorderLayout.NORTH);
 
         sqlTextArea = new JTextArea();
         sqlTextArea.setEditable(false);
         sqlTextArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        sqlTextArea.setBackground(new Color(25, 25, 25));
-        sqlTextArea.setForeground(new Color(225, 225, 225));
-        sqlTextArea.setCaretColor(Color.WHITE);
-        sqlTextArea.setMargin(new Insets(6, 6, 6, 6));
+        sqlTextArea.setMargin(new Insets(8, 8, 8, 8));
 
         lineNumbersArea = new JTextArea(" 1 ");
         lineNumbersArea.setEditable(false);
         lineNumbersArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        lineNumbersArea.setBackground(new Color(35, 35, 35));
-        lineNumbersArea.setForeground(new Color(110, 110, 110));
-        lineNumbersArea.setMargin(new Insets(6, 4, 6, 4));
+        lineNumbersArea.setMargin(new Insets(8, 6, 8, 6));
 
         JPanel editorWithLines = new JPanel(new BorderLayout());
         editorWithLines.add(lineNumbersArea, BorderLayout.WEST);
@@ -110,9 +104,11 @@ public class SchemaExplorerPanel extends JPanel {
         // Stats Footer Bar
         statsLabel = new JLabel(" Satır: 0 | Karakter: 0 | UTF-8 ");
         statsLabel.setFont(statsLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        statsLabel.setForeground(new Color(150, 150, 150));
-        statsLabel.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        statsLabel.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         sqlEditorPanel.add(statsLabel, BorderLayout.SOUTH);
+
+        // Apply initial light theme
+        applyTheme(false);
 
         // Split Pane
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScrollPane, sqlEditorPanel);
@@ -236,6 +232,29 @@ public class SchemaExplorerPanel extends JPanel {
         if (text != null && !text.isBlank()) {
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(text), null);
             JOptionPane.showMessageDialog(this, "SQL panoya kopyalandı!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+        }
+    }
+
+    public void applyTheme(boolean isDark) {
+        if (isDark) {
+            sqlTextArea.setBackground(new Color(24, 24, 27));
+            sqlTextArea.setForeground(new Color(228, 228, 231));
+            sqlTextArea.setCaretColor(Color.WHITE);
+
+            lineNumbersArea.setBackground(new Color(34, 34, 38));
+            lineNumbersArea.setForeground(new Color(115, 115, 125));
+
+            statsLabel.setForeground(new Color(150, 150, 150));
+        } else {
+            // Crisp White Theme for SQL Editor
+            sqlTextArea.setBackground(Color.WHITE);
+            sqlTextArea.setForeground(new Color(31, 35, 40));
+            sqlTextArea.setCaretColor(new Color(9, 105, 218));
+
+            lineNumbersArea.setBackground(new Color(246, 248, 250));
+            lineNumbersArea.setForeground(new Color(140, 149, 159));
+
+            statsLabel.setForeground(new Color(100, 105, 115));
         }
     }
 

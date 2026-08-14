@@ -70,11 +70,23 @@ public class DiffViewerPanel extends JPanel {
     private JTextArea createSqlTextArea() {
         JTextArea area = new JTextArea();
         area.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        area.setBackground(new Color(25, 25, 25));
-        area.setForeground(new Color(220, 220, 220));
         area.setMargin(new Insets(6, 6, 6, 6));
         area.setEditable(false);
         return area;
+    }
+
+    public void applyTheme(boolean isDark) {
+        if (isDark) {
+            leftTextArea.setBackground(new Color(24, 24, 27));
+            leftTextArea.setForeground(new Color(228, 228, 231));
+            rightTextArea.setBackground(new Color(24, 24, 27));
+            rightTextArea.setForeground(new Color(228, 228, 231));
+        } else {
+            leftTextArea.setBackground(Color.WHITE);
+            leftTextArea.setForeground(new Color(31, 35, 40));
+            rightTextArea.setBackground(Color.WHITE);
+            rightTextArea.setForeground(new Color(31, 35, 40));
+        }
     }
 
     public void setExportDir(String dirPath) {

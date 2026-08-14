@@ -24,6 +24,12 @@ public class MainFrame extends JFrame {
     private final JTabbedPane tabbedPane;
     private final JLabel statusLabel;
     private final JButton toggleLogBtn;
+    private final JButton themeToggleBtn;
+    private final JPanel topHeader;
+    private final JLabel profileLabel;
+    private final JLabel titleLabel;
+
+    private boolean isDarkMode = false; // Default: Clean Light Theme as requested
     private boolean isLogVisible = true;
 
     public MainFrame() {
@@ -33,12 +39,12 @@ public class MainFrame extends JFrame {
         System.setProperty("apple.laf.useScreenMenuBar", "true");
         System.setProperty("apple.awt.application.name", "PostgreSQL DDL Studio");
 
-        initLookAndFeel();
+        initLookAndFeel(isDarkMode);
         initAppIcon();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1180, 760);
-        setMinimumSize(new Dimension(900, 600));
+        setSize(1220, 780);
+        setMinimumSize(new Dimension(950, 620));
         setLocationRelativeTo(null);
 
         // Sub-Panels
@@ -51,98 +57,157 @@ public class MainFrame extends JFrame {
         // Main Container
         JPanel mainContainer = new JPanel(new BorderLayout(0, 0));
 
-        // 1. Top Header with Profile Management
-        JPanel topHeader = createTopHeader();
+        // 1. Top Navbar Header
+        topHeader = new JPanel(new BorderLayout(16, 0));
+        profileLabel = new JLabel("🗄️ Profil:");
+        titleLabel = new JLabel("PostgreSQL DDL Export Studio");
+        themeToggleBtn = new JButton("🌙 Koyu Mod");
+
+        setupTopHeader();
         mainContainer.add(topHeader, BorderLayout.NORTH);
 
-        // 2. Center Tabs
+        // 2. Center Tabs (Spacious Modern Design)
         tabbedPane = new JTabbedPane();
         tabbedPane.setFont(tabbedPane.getFont().deriveFont(Font.BOLD, 13f));
+        tabbedPane.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
         tabbedPane.addTab("🗂️ Şema & SQL Gezgini", schemaExplorerPanel);
         tabbedPane.addTab("🔌 Bağlantı Ayarları", connectionPanel);
         tabbedPane.addTab("🔄 Şema Farkı (Diff)", diffViewerPanel);
         tabbedPane.addTab("🐙 Git & GitHub", gitSyncPanel);
 
-        // Vertical Split: Tabs on Top, Live Log Console on Bottom
+        // Vertical Split
         JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, logPanel);
         mainSplit.setDividerLocation(480);
         mainSplit.setResizeWeight(0.7);
+        mainSplit.setBorder(null);
         mainContainer.add(mainSplit, BorderLayout.CENTER);
 
-        // 3. Bottom Status Bar
-        JPanel statusBar = new JPanel(new BorderLayout(10, 0));
+        // 3. Bottom Status Bar (Perfectly Centered and Aligned)
+        JPanel statusBar = new JPanel(new BorderLayout(12, 0));
+        statusBar.setPreferredSize(new Dimension(0, 36));
         statusBar.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(55, 55, 55)),
-                BorderFactory.createEmptyBorder(4, 10, 4, 10)
+                BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
+                BorderFactory.createEmptyBorder(6, 16, 6, 16)
         ));
 
         statusLabel = new JLabel("🟢 Hazır | PostgreSQL DDL Studio aktif.");
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 12f));
         statusBar.add(statusLabel, BorderLayout.WEST);
 
         toggleLogBtn = new JButton("📊 Logları Gizle");
         toggleLogBtn.setFont(toggleLogBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        toggleLogBtn.setFocusable(false);
         toggleLogBtn.addActionListener(e -> {
             isLogVisible = !isLogVisible;
             logPanel.setVisible(isLogVisible);
             toggleLogBtn.setText(isLogVisible ? "📊 Logları Gizle" : "📊 Logları Göster");
-            mainSplit.setDividerLocation(isLogVisible ? 480 : 700);
+            mainSplit.setDividerLocation(isLogVisible ? 480 : 720);
         });
         statusBar.add(toggleLogBtn, BorderLayout.EAST);
 
         mainContainer.add(statusBar, BorderLayout.SOUTH);
         setContentPane(mainContainer);
 
-        // Initial Load
+        // Initial Data & Theme Application
+        applyCustomTheme(isDarkMode);
         loadInitialData();
     }
 
-    private JPanel createTopHeader() {
-        JPanel header = new JPanel(new BorderLayout(12, 0));
-        header.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(55, 55, 55)),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+    private void setupTopHeader() {
+        topHeader.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(215, 220, 230)),
+                BorderFactory.createEmptyBorder(10, 18, 10, 18)
         ));
-        header.setBackground(new Color(28, 30, 36));
 
-        // Branding
-        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        // Left Branding
+        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         brandPanel.setOpaque(false);
         JLabel logo = new JLabel("🐘");
         logo.setFont(logo.getFont().deriveFont(22f));
-        JLabel title = new JLabel("PostgreSQL DDL Export Studio");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
-        title.setForeground(new Color(230, 230, 230));
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
         brandPanel.add(logo);
-        brandPanel.add(title);
-        header.add(brandPanel, BorderLayout.WEST);
+        brandPanel.add(titleLabel);
+        topHeader.add(brandPanel, BorderLayout.WEST);
 
-        // Profile Selection Area
-        JPanel profilePanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        profilePanel.setOpaque(false);
-        profilePanel.add(new JLabel("🗄️ Profil:"));
+        // Right Controls: Profile & Theme Switcher
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        rightControls.setOpaque(false);
 
-        profileComboBox.setPreferredSize(new Dimension(200, 28));
+        profileLabel.setFont(profileLabel.getFont().deriveFont(Font.BOLD, 12f));
+        rightControls.add(profileLabel);
+
+        profileComboBox.setPreferredSize(new Dimension(220, 30));
+        profileComboBox.setFont(profileComboBox.getFont().deriveFont(Font.PLAIN, 12f));
         profileComboBox.addActionListener(e -> onProfileSelected());
-        profilePanel.add(profileComboBox);
+        rightControls.add(profileComboBox);
 
         JButton newProfileBtn = new JButton("➕ Yeni Profil");
+        newProfileBtn.setFont(newProfileBtn.getFont().deriveFont(Font.BOLD, 12f));
         newProfileBtn.addActionListener(e -> createNewProfile());
-        profilePanel.add(newProfileBtn);
+        rightControls.add(newProfileBtn);
 
         JButton delProfileBtn = new JButton("🗑️");
         delProfileBtn.setToolTipText("Seçili profili sil");
         delProfileBtn.addActionListener(e -> deleteSelectedProfile());
-        profilePanel.add(delProfileBtn);
+        rightControls.add(delProfileBtn);
 
-        header.add(profilePanel, BorderLayout.EAST);
-        return header;
+        // Theme Toggle Button
+        themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
+        themeToggleBtn.setFocusable(false);
+        themeToggleBtn.addActionListener(e -> toggleTheme());
+        rightControls.add(themeToggleBtn);
+
+        topHeader.add(rightControls, BorderLayout.EAST);
+    }
+
+    private void toggleTheme() {
+        isDarkMode = !isDarkMode;
+        themeToggleBtn.setText(isDarkMode ? "☀️ Açık Mod" : "🌙 Koyu Mod");
+        initLookAndFeel(isDarkMode);
+        applyCustomTheme(isDarkMode);
+        SwingUtilities.updateComponentTreeUI(this);
+    }
+
+    private void applyCustomTheme(boolean dark) {
+        if (dark) {
+            topHeader.setBackground(new Color(24, 26, 32));
+            topHeader.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(50, 55, 65)),
+                    BorderFactory.createEmptyBorder(10, 18, 10, 18)
+            ));
+            titleLabel.setForeground(new Color(235, 240, 250));
+            profileLabel.setForeground(new Color(200, 205, 215));
+        } else {
+            topHeader.setBackground(new Color(245, 247, 250));
+            topHeader.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(215, 220, 230)),
+                    BorderFactory.createEmptyBorder(10, 18, 10, 18)
+            ));
+            titleLabel.setForeground(new Color(25, 30, 40));
+            profileLabel.setForeground(new Color(30, 35, 45)); // High contrast, clearly visible!
+        }
+
+        schemaExplorerPanel.applyTheme(dark);
+        logPanel.applyTheme(dark);
+        diffViewerPanel.applyTheme(dark);
+    }
+
+    private void initLookAndFeel(boolean dark) {
+        try {
+            String lafClassName = dark ? "com.formdev.flatlaf.FlatDarkLaf" : "com.formdev.flatlaf.FlatLightLaf";
+            Class<?> flatLafClass = Class.forName(lafClassName);
+            LookAndFeel laf = (LookAndFeel) flatLafClass.getDeclaredConstructor().newInstance();
+            UIManager.setLookAndFeel(laf);
+        } catch (Throwable t) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ignored) {}
+        }
     }
 
     private void loadInitialData() {
         refreshProfileDropdown();
 
-        // Load export directory if available
         File exportDir = new File(connectionPanel.getOutputDir());
         if (exportDir.exists()) {
             schemaExplorerPanel.loadExportDirectory(exportDir.getAbsolutePath());
@@ -164,7 +229,7 @@ public class MainFrame extends JFrame {
             PostgresqlConfigurationSettings settings = profileManager.getProfile(selected);
             if (settings != null) {
                 connectionPanel.loadSettingsToUi(settings);
-                statusLabel.setText("🟢 Profil seçildi: " + selected + " (" + settings.getServerHost() + ":" + settings.getPort() + "/" + settings.getDatabaseName() + ")");
+                statusLabel.setText("🟢 Profil: " + selected + " (" + settings.getServerHost() + ":" + settings.getPort() + "/" + settings.getDatabaseName() + ")");
             }
         }
     }
@@ -195,7 +260,6 @@ public class MainFrame extends JFrame {
         PostgresqlConfigurationSettings settings = connectionPanel.getSettingsFromUi();
         String outputDir = connectionPanel.getOutputDir();
 
-        // Also save current settings to selected profile
         String currentProfile = (String) profileComboBox.getSelectedItem();
         if (currentProfile != null) {
             profileManager.addOrUpdateProfile(currentProfile, settings);
@@ -242,7 +306,7 @@ public class MainFrame extends JFrame {
                     schemaExplorerPanel.loadExportDirectory(outputDir);
                     diffViewerPanel.setExportDir(outputDir);
                     gitSyncPanel.refreshGitStatus();
-                    tabbedPane.setSelectedIndex(0); // Switch to Schema Explorer tab
+                    tabbedPane.setSelectedIndex(0);
 
                     JOptionPane.showMessageDialog(MainFrame.this,
                             "Tüm PostgreSQL veritabanı DDL script'leri başarıyla dışa aktarıldı!",
@@ -287,17 +351,5 @@ public class MainFrame extends JFrame {
                 }
             }
         } catch (Throwable ignored) {}
-    }
-
-    private void initLookAndFeel() {
-        try {
-            Class<?> flatLafClass = Class.forName("com.formdev.flatlaf.FlatDarkLaf");
-            LookAndFeel laf = (LookAndFeel) flatLafClass.getDeclaredConstructor().newInstance();
-            UIManager.setLookAndFeel(laf);
-        } catch (Throwable t) {
-            try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
-        }
     }
 }
