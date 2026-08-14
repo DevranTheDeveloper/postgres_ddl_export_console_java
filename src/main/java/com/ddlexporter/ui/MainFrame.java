@@ -313,21 +313,23 @@ public class MainFrame extends JFrame {
         isDarkMode = !isDarkMode;
         themeToggleBtn.setText(isDarkMode ? "Açık Tema" : "Koyu Tema");
         initLookAndFeel(isDarkMode);
-        applyCustomTheme(isDarkMode);
         SwingUtilities.updateComponentTreeUI(this);
+        applyCustomTheme(isDarkMode);
     }
 
     private void applyCustomTheme(boolean dark) {
         if (dark) {
-            topHeader.setBackground(new Color(24, 26, 32));
+            topHeader.setBackground(new Color(28, 30, 36));
             topHeader.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(50, 55, 65)),
+                    BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(48, 52, 62)),
                     BorderFactory.createEmptyBorder(10, 18, 10, 18)));
-            titleLabel.setForeground(new Color(235, 240, 250));
-            profileLabel.setForeground(new Color(200, 205, 215));
+            titleLabel.setForeground(new Color(240, 245, 255));
+            profileLabel.setForeground(new Color(210, 215, 225));
+            statusBar.setBackground(new Color(28, 30, 36));
             statusBar.setBorder(BorderFactory.createCompoundBorder(
-                    BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(55, 65, 81)),
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(48, 52, 62)),
                     BorderFactory.createEmptyBorder(6, 16, 6, 16)));
+            contentCards.setBackground(new Color(28, 30, 36));
         } else {
             topHeader.setBackground(new Color(245, 247, 250));
             topHeader.setBorder(BorderFactory.createCompoundBorder(
@@ -335,9 +337,11 @@ public class MainFrame extends JFrame {
                     BorderFactory.createEmptyBorder(10, 18, 10, 18)));
             titleLabel.setForeground(new Color(25, 30, 40));
             profileLabel.setForeground(new Color(30, 35, 45));
+            statusBar.setBackground(new Color(245, 247, 250));
             statusBar.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
                     BorderFactory.createEmptyBorder(6, 16, 6, 16)));
+            contentCards.setBackground(new Color(245, 247, 250));
         }
 
         updateTabBarStyles();
@@ -350,14 +354,23 @@ public class MainFrame extends JFrame {
 
     private void initLookAndFeel(boolean dark) {
         try {
-            String lafClassName = dark ? "com.formdev.flatlaf.FlatDarkLaf" : "com.formdev.flatlaf.FlatLightLaf";
-            Class<?> flatLafClass = Class.forName(lafClassName);
-            LookAndFeel laf = (LookAndFeel) flatLafClass.getDeclaredConstructor().newInstance();
-            UIManager.setLookAndFeel(laf);
+            if (dark) {
+                com.formdev.flatlaf.themes.FlatMacDarkLaf.setup();
+            } else {
+                com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
+            }
         } catch (Throwable t) {
             try {
-                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {
+                if (dark) {
+                    com.formdev.flatlaf.FlatDarkLaf.setup();
+                } else {
+                    com.formdev.flatlaf.FlatLightLaf.setup();
+                }
+            } catch (Throwable t2) {
+                try {
+                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+                } catch (Exception ignored) {
+                }
             }
         }
     }

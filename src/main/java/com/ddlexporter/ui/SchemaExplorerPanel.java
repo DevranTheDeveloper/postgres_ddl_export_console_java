@@ -451,15 +451,29 @@ public class SchemaExplorerPanel extends JPanel {
 
     public void applyTheme(boolean isDark) {
         if (isDark) {
+            setBackground(new Color(30, 31, 34));
             sqlTextArea.setBackground(new Color(24, 24, 27));
             sqlTextArea.setForeground(new Color(228, 228, 231));
             sqlTextArea.setCaretColor(Color.WHITE);
 
-            lineNumbersArea.setBackground(new Color(34, 34, 38));
+            lineNumbersArea.setBackground(new Color(32, 33, 36));
             lineNumbersArea.setForeground(new Color(115, 115, 125));
 
+            tree.setBackground(new Color(30, 31, 34));
+            tree.setForeground(new Color(220, 225, 235));
+
+            DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer) tree.getCellRenderer();
+            if (renderer != null) {
+                renderer.setBackgroundNonSelectionColor(new Color(30, 31, 34));
+                renderer.setTextNonSelectionColor(new Color(220, 225, 235));
+                renderer.setTextSelectionColor(Color.WHITE);
+                renderer.setBackgroundSelectionColor(new Color(45, 65, 100));
+            }
+
             statsLabel.setForeground(new Color(150, 150, 150));
+            currentFileLabel.setForeground(new Color(210, 215, 225));
         } else {
+            setBackground(new Color(248, 250, 252));
             sqlTextArea.setBackground(Color.WHITE);
             sqlTextArea.setForeground(new Color(31, 35, 40));
             sqlTextArea.setCaretColor(new Color(9, 105, 218));
@@ -467,7 +481,19 @@ public class SchemaExplorerPanel extends JPanel {
             lineNumbersArea.setBackground(new Color(246, 248, 250));
             lineNumbersArea.setForeground(new Color(140, 149, 159));
 
+            tree.setBackground(Color.WHITE);
+            tree.setForeground(new Color(30, 41, 59));
+
+            DefaultTreeCellRenderer renderer = (DefaultTreeCellRenderer) tree.getCellRenderer();
+            if (renderer != null) {
+                renderer.setBackgroundNonSelectionColor(Color.WHITE);
+                renderer.setTextNonSelectionColor(new Color(30, 41, 59));
+                renderer.setTextSelectionColor(Color.BLACK);
+                renderer.setBackgroundSelectionColor(new Color(204, 232, 255));
+            }
+
             statsLabel.setForeground(new Color(100, 105, 115));
+            currentFileLabel.setForeground(new Color(51, 65, 85));
         }
     }
 
