@@ -7,6 +7,8 @@ import com.ddlexporter.common.scripter.ScripterBuilder;
 import com.ddlexporter.common.writer.FileWriter;
 import com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings;
 
+import com.ddlexporter.schedule.ScheduledBackupManager;
+
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
@@ -24,6 +26,7 @@ public class MainFrame extends JFrame {
     private final ProfileManager profileManager = new ProfileManager();
     private final AuditHistoryManager auditManager = new AuditHistoryManager();
     private final SystemDiagnosticsManager diagnosticsManager = new SystemDiagnosticsManager();
+    private final ScheduledBackupManager scheduleManager;
     private final JComboBox<String> profileComboBox = new JComboBox<>();
 
     private final ConnectionPanel connectionPanel;
@@ -33,6 +36,8 @@ public class MainFrame extends JFrame {
     private final GitSyncPanel gitSyncPanel;
     private final ServerStatusPanel serverStatusPanel;
     private final LogPanel logPanel;
+
+    private final JButton scheduleStatusBtn = new JButton();
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentCards = new JPanel(cardLayout);
@@ -74,6 +79,20 @@ public class MainFrame extends JFrame {
         diffViewerPanel = new DiffViewerPanel(profileManager);
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
+
+        // Background Scheduled Backup Engine
+        scheduleManager = new ScheduledBackupManager(profileManager, auditManager);
+        scheduleManager.setLoggerCallback(logPanel::appendLog);
+        scheduleManager.setOnBackupCompletedCallback(() -> SwingUtilities.invokeLater(() -> {
+            String outDir = connectionPanel.getOutputDir();
+            schemaExplorerPanel.loadExportDirectory(outDir);
+            erDiagramPanel.setExportDir(outDir);
+            diffViewerPanel.setExportDir(outDir);
+            gitSyncPanel.refreshGitStatus();
+            serverStatusPanel.loadAuditHistory();
+            updateScheduleButtonUi();
+        }));
+        scheduleManager.restartScheduler();
 
         // Connect ERD visual navigation to SQL editor and Diff viewer
         erDiagramPanel.setTableNavigateListener(tableName -> {
@@ -191,6 +210,15 @@ public class MainFrame extends JFrame {
         profileMenuBtn.setToolTipText("Profil yönetim seçenekleri (Yeni Ekle, Çoğalt, Sil)");
         profileMenuBtn.addActionListener(e -> showProfileMenu(profileMenuBtn));
         rightControls.add(profileMenuBtn);
+
+        // Scheduled Backup Status & Dialog Button
+        scheduleStatusBtn.setFont(scheduleStatusBtn.getFont().deriveFont(Font.BOLD, 12f));
+        scheduleStatusBtn.setToolTipText("Otomatik Zamanlanmış DDL Yedekleme Yapılandırması");
+        scheduleStatusBtn.setFocusable(false);
+        scheduleStatusBtn.addActionListener(e -> {
+            new ScheduledBackupDialog(this, scheduleManager, profileManager, this::updateScheduleButtonUi).setVisible(true);
+        });
+        rightControls.add(scheduleStatusBtn);
 
         // Theme Toggle Button
         themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
@@ -326,8 +354,20 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void updateScheduleButtonUi() {
+        ScheduledBackupManager.ScheduleConfig cfg = scheduleManager.getConfig();
+        if (cfg.enabled) {
+            scheduleStatusBtn.setText("⏱️ Oto-Yedek: " + cfg.intervalMinutes + " dk 🟢");
+            scheduleStatusBtn.setForeground(new Color(22, 163, 74));
+        } else {
+            scheduleStatusBtn.setText("⏱️ Oto-Yedek: Kapalı ⚪");
+            scheduleStatusBtn.setForeground(null);
+        }
+    }
+
     private void loadInitialData() {
         refreshProfileDropdown();
+        updateScheduleButtonUi();
 
         File exportDir = new File(connectionPanel.getOutputDir());
         int count = 0;
