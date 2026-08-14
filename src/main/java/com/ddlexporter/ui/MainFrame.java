@@ -453,6 +453,8 @@ public class MainFrame extends JFrame {
                 connectionPanel.loadSettingsToUi(settings);
                 statusLabel.setText("Profil: " + selected + " (" + settings.getServerHost() + ":"
                         + settings.getPort() + "/" + settings.getDatabaseName() + ")");
+                schemaExplorerPanel.focusDatabase(settings.getDatabaseName());
+                erDiagramPanel.setDatabase(connectionPanel.getOutputDir(), settings.getDatabaseName());
             }
         }
     }

@@ -119,16 +119,23 @@ public class ErDiagramPanel extends JPanel {
         canvas.repaint();
     }
 
+    private String targetDbName = null;
+
     public void setExportDir(String dirPath) {
+        setDatabase(dirPath, null);
+    }
+
+    public void setDatabase(String dirPath, String dbName) {
         if (dirPath != null) {
             this.currentExportDir = new File(dirPath);
+            this.targetDbName = dbName;
             reloadFromExport();
         }
     }
 
     public void reloadFromExport() {
         if (currentExportDir != null && currentExportDir.exists()) {
-            this.model = ErDiagramEngine.buildModelFromDirectory(currentExportDir);
+            this.model = ErDiagramEngine.buildModelFromDirectory(currentExportDir, targetDbName);
         } else {
             this.model = ErDiagramEngine.generateSampleModel();
         }

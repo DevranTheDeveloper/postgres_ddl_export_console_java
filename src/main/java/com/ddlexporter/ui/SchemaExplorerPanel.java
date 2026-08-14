@@ -497,6 +497,20 @@ public class SchemaExplorerPanel extends JPanel {
         }
     }
 
+    public void focusDatabase(String dbName) {
+        if (dbName == null || dbName.isBlank()) return;
+        for (int i = 0; i < rootNode.getChildCount(); i++) {
+            DefaultMutableTreeNode dbNode = (DefaultMutableTreeNode) rootNode.getChildAt(i);
+            if (dbName.equalsIgnoreCase(dbNode.getUserObject().toString())) {
+                javax.swing.tree.TreePath path = new javax.swing.tree.TreePath(dbNode.getPath());
+                tree.expandPath(path);
+                tree.setSelectionPath(path);
+                tree.scrollPathToVisible(path);
+                break;
+            }
+        }
+    }
+
     private void expandAllNodes(JTree tree, int startingIndex, int rowCount) {
         for (int i = startingIndex; i < rowCount; ++i) {
             tree.expandRow(i);

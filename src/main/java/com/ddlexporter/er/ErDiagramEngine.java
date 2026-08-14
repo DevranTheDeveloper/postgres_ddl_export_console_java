@@ -59,6 +59,10 @@ public class ErDiagramEngine {
     }
 
     public static ErModel buildModelFromDirectory(File exportDir) {
+        return buildModelFromDirectory(exportDir, null);
+    }
+
+    public static ErModel buildModelFromDirectory(File exportDir, String targetDbName) {
         ErModel model = new ErModel();
         if (exportDir == null || !exportDir.exists()) {
             return generateSampleModel();
@@ -66,7 +70,15 @@ public class ErDiagramEngine {
 
         try {
             List<File> sqlFiles = Files.walk(exportDir.toPath())
-                    .filter(p -> p.toString().endsWith(".sql") && p.toString().contains("tables"))
+                    .filter(p -> {
+                        String s = p.toString().toLowerCase();
+                        boolean isSql = s.endsWith(".sql");
+                        boolean isTable = s.contains("/table/") || s.contains("\\table\\") || s.contains("table");
+                        if (targetDbName != null && !targetDbName.isBlank()) {
+                            return isSql && isTable && s.contains(targetDbName.toLowerCase());
+                        }
+                        return isSql && isTable;
+                    })
                     .map(java.nio.file.Path::toFile)
                     .toList();
 
