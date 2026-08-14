@@ -7,6 +7,7 @@ import java.awt.*;
 public class LogPanel extends JPanel {
     private final JTextPane textPane;
     private final StyledDocument doc;
+    private final JLabel statusLabel;
     private final JProgressBar progressBar;
     private boolean isDark = false;
 
@@ -24,15 +25,27 @@ public class LogPanel extends JPanel {
         scrollPane.setPreferredSize(new Dimension(0, 150));
         add(scrollPane, BorderLayout.CENTER);
 
-        JPanel bottomPanel = new JPanel(new BorderLayout(8, 0));
-        bottomPanel.setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
+        // Bottom Status & Progress Container
+        JPanel bottomPanel = new JPanel(new BorderLayout(12, 0));
+        bottomPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
-        progressBar = new JProgressBar();
+        // Left: Clean status text that is NEVER cut by progress bar animation
+        statusLabel = new JLabel("Durum: Hazır");
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 12f));
+        statusLabel.setPreferredSize(new Dimension(280, 26));
+        bottomPanel.add(statusLabel, BorderLayout.WEST);
+
+        // Center: Spacious modern progress bar with dedicated height (26px)
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setPreferredSize(new Dimension(0, 26));
         progressBar.setStringPainted(true);
-        progressBar.setString("Hazır");
+        progressBar.setString("%0");
+        progressBar.setFont(progressBar.getFont().deriveFont(Font.BOLD, 11f));
         bottomPanel.add(progressBar, BorderLayout.CENTER);
 
+        // Right: Clear button
         JButton clearBtn = new JButton("Temizle");
+        clearBtn.setPreferredSize(new Dimension(80, 26));
         clearBtn.setFont(clearBtn.getFont().deriveFont(Font.PLAIN, 11f));
         clearBtn.addActionListener(e -> textPane.setText(""));
         bottomPanel.add(clearBtn, BorderLayout.EAST);
@@ -46,7 +59,6 @@ public class LogPanel extends JPanel {
             return;
         SwingUtilities.invokeLater(() -> {
             try {
-                // Color palette
                 Color timeColor = isDark ? new Color(156, 163, 175) : new Color(107, 114, 128);
                 Color infoColor = isDark ? new Color(74, 222, 128) : new Color(22, 163, 74); // Green
                 Color errorColor = isDark ? new Color(248, 113, 113) : new Color(220, 38, 38); // Red
@@ -108,14 +120,16 @@ public class LogPanel extends JPanel {
     }
 
     public void setProgressIndeterminate(boolean indeterminate, String statusText) {
+        statusLabel.setText("Durum: " + statusText);
         progressBar.setIndeterminate(indeterminate);
-        progressBar.setString(statusText);
+        progressBar.setString(indeterminate ? "İşleniyor..." : "Hazır");
     }
 
     public void setProgress(int value, String statusText) {
+        statusLabel.setText("Durum: " + statusText);
         progressBar.setIndeterminate(false);
         progressBar.setValue(value);
-        progressBar.setString(statusText);
+        progressBar.setString("%" + value);
     }
 
     public void applyTheme(boolean isDark) {
@@ -123,9 +137,11 @@ public class LogPanel extends JPanel {
         if (isDark) {
             textPane.setBackground(new Color(18, 20, 24));
             textPane.setCaretColor(Color.WHITE);
+            statusLabel.setForeground(new Color(220, 225, 235));
         } else {
             textPane.setBackground(new Color(248, 250, 252));
             textPane.setCaretColor(Color.BLACK);
+            statusLabel.setForeground(new Color(30, 40, 55));
         }
     }
 }
