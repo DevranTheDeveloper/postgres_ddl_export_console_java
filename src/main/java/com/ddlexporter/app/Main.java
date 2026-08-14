@@ -30,6 +30,15 @@ public class Main {
     }
 
     public void run() {
+        if (args == null || args.length == 0) {
+            // Masaüstü GUI Modunu Başlat
+            javax.swing.SwingUtilities.invokeLater(() -> {
+                com.ddlexporter.ui.MainFrame mainFrame = new com.ddlexporter.ui.MainFrame();
+                mainFrame.setVisible(true);
+            });
+            return;
+        }
+
         if (!parseArgs()) {
             showHelp();
             return;
