@@ -87,6 +87,12 @@ public class ConnectionPanel extends JPanel {
         leftActionPanel.setOpaque(false);
         testBtn.setPreferredSize(new Dimension(0, 36));
         testBtn.setFont(testBtn.getFont().deriveFont(Font.BOLD, 12f));
+        testBtn.putClientProperty("JButton.buttonType", "roundRect");
+        testBtn.setBackground(new Color(37, 99, 235));
+        testBtn.setForeground(Color.WHITE);
+        testBtn.setOpaque(true);
+        testBtn.setContentAreaFilled(true);
+        testBtn.setFocusPainted(false);
         testBtn.addActionListener(e -> testConnection());
         leftActionPanel.add(testBtn);
         leftCard.add(leftActionPanel, BorderLayout.SOUTH);
@@ -139,9 +145,13 @@ public class ConnectionPanel extends JPanel {
         rightActionPanel.setOpaque(false);
 
         exportBtn.setPreferredSize(new Dimension(0, 36));
-        exportBtn.setBackground(new Color(34, 139, 34));
+        exportBtn.setFont(exportBtn.getFont().deriveFont(Font.BOLD, 13f));
+        exportBtn.putClientProperty("JButton.buttonType", "default");
+        exportBtn.setBackground(new Color(22, 163, 74));
         exportBtn.setForeground(Color.WHITE);
-        exportBtn.setFont(exportBtn.getFont().deriveFont(Font.BOLD, 12f));
+        exportBtn.setOpaque(true);
+        exportBtn.setContentAreaFilled(true);
+        exportBtn.setFocusPainted(false);
         exportBtn.addActionListener(e -> {
             if (onStartExport != null) onStartExport.run();
         });
