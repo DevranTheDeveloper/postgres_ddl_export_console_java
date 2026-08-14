@@ -30,9 +30,13 @@ public class ServerStatusPanel extends JPanel {
     private final JTable activityTable;
     private final JCheckBox autoRefreshBox = new JCheckBox("5 saniyede bir otomatik yenile", false);
     private final JButton refreshBtn = new JButton("Yenile");
+    private final JButton testModeBtn = new JButton("Canlı Testi Başlat");
     private final JLabel lastUpdateLabel = new JLabel("Son Güncelleme: Henüz yapılmadı");
 
     private Timer autoRefreshTimer;
+    private Timer simulationTimer;
+    private boolean isSimulationRunning = false;
+    private int simulationStep = 0;
     private boolean isDark = false;
 
     public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier) {
@@ -56,8 +60,16 @@ public class ServerStatusPanel extends JPanel {
         controls.setOpaque(false);
         controls.add(lastUpdateLabel);
         controls.add(autoRefreshBox);
+
+        testModeBtn.setFont(testModeBtn.getFont().deriveFont(Font.BOLD, 12f));
+        testModeBtn.addActionListener(e -> toggleSimulationTest());
+        controls.add(testModeBtn);
+
         refreshBtn.setFont(refreshBtn.getFont().deriveFont(Font.BOLD, 12f));
-        refreshBtn.addActionListener(e -> refreshMetrics());
+        refreshBtn.addActionListener(e -> {
+            if (isSimulationRunning) stopSimulationTest();
+            refreshMetrics();
+        });
         controls.add(refreshBtn);
         headerToolbar.add(controls, BorderLayout.EAST);
         topContainer.add(headerToolbar, BorderLayout.NORTH);
@@ -112,7 +124,7 @@ public class ServerStatusPanel extends JPanel {
 
         // Timer for auto-refresh
         autoRefreshTimer = new Timer(5000, e -> {
-            if (autoRefreshBox.isSelected() && isShowing()) {
+            if (autoRefreshBox.isSelected() && isShowing() && !isSimulationRunning) {
                 refreshMetrics();
             }
         });
@@ -141,6 +153,131 @@ public class ServerStatusPanel extends JPanel {
         card.add(subLabel, BorderLayout.SOUTH);
 
         return card;
+    }
+
+    private void toggleSimulationTest() {
+        if (isSimulationRunning) {
+            stopSimulationTest();
+            refreshMetrics();
+        } else {
+            startSimulationTest();
+        }
+    }
+
+    private void startSimulationTest() {
+        isSimulationRunning = true;
+        simulationStep = 0;
+        testModeBtn.setText("Testi Durdur");
+
+        // Simulation Test Scenario: 10 dynamic live load states
+        simulationTimer = new Timer(900, e -> {
+            simulationStep++;
+            runSimulationStep(simulationStep);
+            if (simulationStep >= 12) {
+                simulationStep = 0; // loop seamlessly
+            }
+        });
+        simulationTimer.start();
+        runSimulationStep(0);
+    }
+
+    private void stopSimulationTest() {
+        isSimulationRunning = false;
+        if (simulationTimer != null) {
+            simulationTimer.stop();
+            simulationTimer = null;
+        }
+        testModeBtn.setText("Canlı Testi Başlat");
+    }
+
+    private void runSimulationStep(int step) {
+        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
+        lastUpdateLabel.setText("Test Çalışıyor (Adım " + (step + 1) + "/12) - " + java.time.LocalTime.now().format(dtf));
+
+        statusValueLabel.setText("Çevrimiçi (Simülasyon)");
+        statusValueLabel.setForeground(new Color(22, 163, 74));
+        versionLabel.setText("PostgreSQL 16.2 Test Modu");
+
+        int maxConns = 100;
+        int activeConns;
+        long commits;
+        long rollbacks;
+        long blksHit;
+        long blksRead;
+        String dbSize;
+
+        tableModel.setRowCount(0);
+
+        switch (step % 4) {
+            case 0: // Normal Baseline Load
+                activeConns = 8;
+                commits = 1250;
+                rollbacks = 4;
+                blksHit = 84500;
+                blksRead = 950;
+                dbSize = "42.5 MB";
+                tableModel.addRow(new Object[]{1012, "postgres", "127.0.0.1", "active", "SELECT * FROM public.products ORDER BY id LIMIT 50"});
+                tableModel.addRow(new Object[]{1015, "app_user", "192.168.1.20", "idle", "COMMIT"});
+                tableModel.addRow(new Object[]{1018, "report_svc", "192.168.1.35", "active", "SELECT count(*), avg(price) FROM products"});
+                break;
+
+            case 1: // Moderate Traffic Surge
+                activeConns = 38;
+                commits = 4820;
+                rollbacks = 32;
+                blksHit = 142000;
+                blksRead = 3400;
+                dbSize = "45.1 MB";
+                tableModel.addRow(new Object[]{1024, "api_gateway", "10.0.0.5", "active", "INSERT INTO orders (product_id, amount) VALUES (42, 3)"});
+                tableModel.addRow(new Object[]{1028, "api_gateway", "10.0.0.6", "active", "UPDATE products SET stock = stock - 1 WHERE id = 42"});
+                tableModel.addRow(new Object[]{1031, "postgres", "127.0.0.1", "active", "SELECT pg_stat_activity.pid, query FROM pg_stat_activity"});
+                tableModel.addRow(new Object[]{1035, "analytics", "10.0.0.99", "active", "SELECT category, sum(price) FROM products GROUP BY category"});
+                tableModel.addRow(new Object[]{1040, "app_user", "192.168.1.20", "idle", "RELEASE SAVEPOINT sp1"});
+                break;
+
+            case 2: // High Load / Peak Activity (Amber Warning Level)
+                activeConns = 76;
+                commits = 12450;
+                rollbacks = 240;
+                blksHit = 280000;
+                blksRead = 14500;
+                dbSize = "52.8 MB";
+                tableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
+                tableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
+                tableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
+                tableModel.addRow(new Object[]{1065, "etl_worker", "10.0.2.14", "active", "COPY products_archive TO STDOUT WITH CSV"});
+                tableModel.addRow(new Object[]{1070, "web_client", "192.168.1.102", "active", "SELECT json_agg(p) FROM products p"});
+                tableModel.addRow(new Object[]{1075, "admin", "127.0.0.1", "idle in tx", "UPDATE settings SET maintenance = true"});
+                break;
+
+            default: // Stress Load (Red Level Gauge Demo)
+                activeConns = 94;
+                commits = 28400;
+                rollbacks = 1250;
+                blksHit = 510000;
+                blksRead = 48000;
+                dbSize = "68.4 MB";
+                tableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
+                tableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
+                tableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
+                tableModel.addRow(new Object[]{1095, "dba_user", "127.0.0.1", "active", "SELECT pg_cancel_backend(1090)"});
+                tableModel.addRow(new Object[]{1100, "indexer", "10.0.3.5", "active", "REINDEX TABLE public.products"});
+                break;
+        }
+
+        int pct = (int) Math.round(((double) activeConns / maxConns) * 100.0);
+        connectionsValueLabel.setText(activeConns + " / " + maxConns + " (%" + pct + ")");
+        dbSizeValueLabel.setText(dbSize);
+
+        long totalBlks = blksHit + blksRead;
+        double cacheHitRatio = totalBlks > 0 ? ((double) blksHit / totalBlks) * 100.0 : 100.0;
+        cacheHitValueLabel.setText(String.format("%%%.1f", cacheHitRatio));
+        cacheHitValueLabel.setForeground(cacheHitRatio > 90 ? new Color(22, 163, 74) : new Color(217, 119, 6));
+
+        txStatsLabel.setText("Commit: " + commits + " | Rollback: " + rollbacks);
+
+        // Animate Charts
+        chartPanel.updateData(commits, rollbacks, blksHit, blksRead, activeConns, maxConns, isDark);
     }
 
     public void refreshMetrics() {
