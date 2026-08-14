@@ -10,8 +10,15 @@ import com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MainFrame extends JFrame {
+    private static final String CARD_SCHEMA = "SCHEMA";
+    private static final String CARD_SETTINGS = "SETTINGS";
+    private static final String CARD_DIFF = "DIFF";
+    private static final String CARD_GIT = "GIT";
+
     private final ProfileManager profileManager = new ProfileManager();
     private final JComboBox<String> profileComboBox = new JComboBox<>();
 
@@ -21,15 +28,21 @@ public class MainFrame extends JFrame {
     private final GitSyncPanel gitSyncPanel;
     private final LogPanel logPanel;
 
-    private final JTabbedPane tabbedPane;
+    private final CardLayout cardLayout = new CardLayout();
+    private final JPanel contentCards = new JPanel(cardLayout);
+    private final JPanel navTabBar = new JPanel(new GridLayout(1, 4, 0, 0));
+    private final List<JButton> tabButtons = new ArrayList<>();
+    private String currentCard = CARD_SCHEMA;
+
     private final JLabel statusLabel;
     private final JButton toggleLogBtn;
     private final JButton themeToggleBtn;
     private final JPanel topHeader;
     private final JLabel profileLabel;
     private final JLabel titleLabel;
+    private final JPanel statusBar;
 
-    private boolean isDarkMode = false; // Default: Clean Light Theme as requested
+    private boolean isDarkMode = false; // Default: Clean Light Theme
     private boolean isLogVisible = true;
 
     public MainFrame() {
@@ -64,26 +77,30 @@ public class MainFrame extends JFrame {
         themeToggleBtn = new JButton("🌙 Koyu Mod");
 
         setupTopHeader();
-        mainContainer.add(topHeader, BorderLayout.NORTH);
 
-        // 2. Center Tabs (Spacious Modern Design)
-        tabbedPane = new JTabbedPane();
-        tabbedPane.setFont(tabbedPane.getFont().deriveFont(Font.BOLD, 13f));
-        tabbedPane.setBorder(BorderFactory.createEmptyBorder(4, 8, 4, 8));
-        tabbedPane.addTab("🗂️ Şema & SQL Gezgini", schemaExplorerPanel);
-        tabbedPane.addTab("🔌 Bağlantı Ayarları", connectionPanel);
-        tabbedPane.addTab("🔄 Şema Farkı (Diff)", diffViewerPanel);
-        tabbedPane.addTab("🐙 Git & GitHub", gitSyncPanel);
+        // Top Section combining Header + Full-Width Segmented Tab Navigation Bar
+        JPanel topCombinedPanel = new JPanel(new BorderLayout(0, 0));
+        topCombinedPanel.add(topHeader, BorderLayout.NORTH);
 
-        // Vertical Split
-        JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, tabbedPane, logPanel);
+        setupFullWidthTabBar();
+        topCombinedPanel.add(navTabBar, BorderLayout.SOUTH);
+        mainContainer.add(topCombinedPanel, BorderLayout.NORTH);
+
+        // 2. Center Content Cards (CardLayout seamlessly attached to tab bar)
+        contentCards.add(schemaExplorerPanel, CARD_SCHEMA);
+        contentCards.add(connectionPanel, CARD_SETTINGS);
+        contentCards.add(diffViewerPanel, CARD_DIFF);
+        contentCards.add(gitSyncPanel, CARD_GIT);
+
+        // Vertical Split between Content Cards and Log Panel
+        JSplitPane mainSplit = new JSplitPane(JSplitPane.VERTICAL_SPLIT, contentCards, logPanel);
         mainSplit.setDividerLocation(480);
         mainSplit.setResizeWeight(0.7);
         mainSplit.setBorder(null);
         mainContainer.add(mainSplit, BorderLayout.CENTER);
 
-        // 3. Bottom Status Bar (Perfectly Centered and Aligned)
-        JPanel statusBar = new JPanel(new BorderLayout(12, 0));
+        // 3. Bottom Status Bar (Centered and Balanced)
+        statusBar = new JPanel(new BorderLayout(12, 0));
         statusBar.setPreferredSize(new Dimension(0, 36));
         statusBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
@@ -110,6 +127,7 @@ public class MainFrame extends JFrame {
 
         // Initial Data & Theme Application
         applyCustomTheme(isDarkMode);
+        selectTab(CARD_SCHEMA);
         loadInitialData();
     }
 
@@ -160,6 +178,74 @@ public class MainFrame extends JFrame {
         topHeader.add(rightControls, BorderLayout.EAST);
     }
 
+    private void setupFullWidthTabBar() {
+        navTabBar.setPreferredSize(new Dimension(0, 42));
+        navTabBar.removeAll();
+        tabButtons.clear();
+
+        tabButtons.add(createTabButton("📁 Şema & SQL Gezgini", CARD_SCHEMA));
+        tabButtons.add(createTabButton("⚙️ Bağlantı Ayarları", CARD_SETTINGS));
+        tabButtons.add(createTabButton("🔄 Şema Farkı (Diff)", CARD_DIFF));
+        tabButtons.add(createTabButton("🐙 Git & GitHub", CARD_GIT));
+
+        for (JButton btn : tabButtons) {
+            navTabBar.add(btn);
+        }
+    }
+
+    private JButton createTabButton(String title, String cardKey) {
+        JButton btn = new JButton(title);
+        btn.setFont(btn.getFont().deriveFont(Font.BOLD, 13f));
+        btn.setFocusPainted(false);
+        btn.setContentAreaFilled(true);
+        btn.setOpaque(true);
+        btn.setCursor(new Cursor(Cursor.HAND_CURSOR));
+        btn.addActionListener(e -> selectTab(cardKey));
+        btn.putClientProperty("cardKey", cardKey);
+        return btn;
+    }
+
+    private void selectTab(String cardKey) {
+        this.currentCard = cardKey;
+        cardLayout.show(contentCards, cardKey);
+        updateTabBarStyles();
+    }
+
+    private void updateTabBarStyles() {
+        Color activeBg = isDarkMode ? new Color(36, 40, 48) : Color.WHITE;
+        Color activeFg = isDarkMode ? new Color(96, 165, 250) : new Color(9, 105, 218);
+        Color inactiveBg = isDarkMode ? new Color(24, 26, 32) : new Color(238, 242, 246);
+        Color inactiveFg = isDarkMode ? new Color(156, 163, 175) : new Color(75, 85, 99);
+        Color borderColor = isDarkMode ? new Color(55, 65, 81) : new Color(209, 213, 219);
+        Color activeIndicator = isDarkMode ? new Color(96, 165, 250) : new Color(9, 105, 218);
+
+        navTabBar.setBackground(inactiveBg);
+        navTabBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
+
+        for (int i = 0; i < tabButtons.size(); i++) {
+            JButton btn = tabButtons.get(i);
+            String cardKey = (String) btn.getClientProperty("cardKey");
+            boolean isActive = cardKey.equals(currentCard);
+
+            btn.setBackground(isActive ? activeBg : inactiveBg);
+            btn.setForeground(isActive ? activeFg : inactiveFg);
+
+            // Adjacent borders: Right border between tabs + Bottom active indicator
+            int rightBorder = (i == tabButtons.size() - 1) ? 0 : 1;
+            if (isActive) {
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 3, rightBorder, activeIndicator),
+                        BorderFactory.createEmptyBorder(6, 14, 3, 14)
+                ));
+            } else {
+                btn.setBorder(BorderFactory.createCompoundBorder(
+                        BorderFactory.createMatteBorder(0, 0, 1, rightBorder, borderColor),
+                        BorderFactory.createEmptyBorder(8, 14, 8, 14)
+                ));
+            }
+        }
+    }
+
     private void toggleTheme() {
         isDarkMode = !isDarkMode;
         themeToggleBtn.setText(isDarkMode ? "☀️ Açık Mod" : "🌙 Koyu Mod");
@@ -177,6 +263,10 @@ public class MainFrame extends JFrame {
             ));
             titleLabel.setForeground(new Color(235, 240, 250));
             profileLabel.setForeground(new Color(200, 205, 215));
+            statusBar.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(55, 65, 81)),
+                    BorderFactory.createEmptyBorder(6, 16, 6, 16)
+            ));
         } else {
             topHeader.setBackground(new Color(245, 247, 250));
             topHeader.setBorder(BorderFactory.createCompoundBorder(
@@ -184,9 +274,14 @@ public class MainFrame extends JFrame {
                     BorderFactory.createEmptyBorder(10, 18, 10, 18)
             ));
             titleLabel.setForeground(new Color(25, 30, 40));
-            profileLabel.setForeground(new Color(30, 35, 45)); // High contrast, clearly visible!
+            profileLabel.setForeground(new Color(30, 35, 45));
+            statusBar.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
+                    BorderFactory.createEmptyBorder(6, 16, 6, 16)
+            ));
         }
 
+        updateTabBarStyles();
         schemaExplorerPanel.applyTheme(dark);
         logPanel.applyTheme(dark);
         diffViewerPanel.applyTheme(dark);
@@ -306,7 +401,7 @@ public class MainFrame extends JFrame {
                     schemaExplorerPanel.loadExportDirectory(outputDir);
                     diffViewerPanel.setExportDir(outputDir);
                     gitSyncPanel.refreshGitStatus();
-                    tabbedPane.setSelectedIndex(0);
+                    selectTab(CARD_SCHEMA);
 
                     JOptionPane.showMessageDialog(MainFrame.this,
                             "Tüm PostgreSQL veritabanı DDL script'leri başarıyla dışa aktarıldı!",
