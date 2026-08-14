@@ -140,10 +140,7 @@ public class MainFrame extends JFrame {
         // Left Branding
         JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         brandPanel.setOpaque(false);
-        JLabel logo = new JLabel("🐘");
-        logo.setFont(logo.getFont().deriveFont(22f));
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
-        brandPanel.add(logo);
         brandPanel.add(titleLabel);
         topHeader.add(brandPanel, BorderLayout.WEST);
 
@@ -159,12 +156,13 @@ public class MainFrame extends JFrame {
         profileComboBox.addActionListener(e -> onProfileSelected());
         rightControls.add(profileComboBox);
 
-        JButton newProfileBtn = new JButton("➕ Yeni Profil");
+        JButton newProfileBtn = new JButton("Yeni Profil");
         newProfileBtn.setFont(newProfileBtn.getFont().deriveFont(Font.BOLD, 12f));
         newProfileBtn.addActionListener(e -> createNewProfile());
         rightControls.add(newProfileBtn);
 
-        JButton delProfileBtn = new JButton("🗑️");
+        JButton delProfileBtn = new JButton("Sil");
+        delProfileBtn.setFont(delProfileBtn.getFont().deriveFont(Font.PLAIN, 12f));
         delProfileBtn.setToolTipText("Seçili profili sil");
         delProfileBtn.addActionListener(e -> deleteSelectedProfile());
         rightControls.add(delProfileBtn);
@@ -179,14 +177,14 @@ public class MainFrame extends JFrame {
     }
 
     private void setupFullWidthTabBar() {
-        navTabBar.setPreferredSize(new Dimension(0, 42));
+        navTabBar.setPreferredSize(new Dimension(0, 40));
         navTabBar.removeAll();
         tabButtons.clear();
 
-        tabButtons.add(createTabButton("📁 Şema & SQL Gezgini", CARD_SCHEMA));
-        tabButtons.add(createTabButton("⚙️ Bağlantı Ayarları", CARD_SETTINGS));
-        tabButtons.add(createTabButton("🔄 Şema Farkı (Diff)", CARD_DIFF));
-        tabButtons.add(createTabButton("🐙 Git & GitHub", CARD_GIT));
+        tabButtons.add(createTabButton("Şema & SQL Gezgini", CARD_SCHEMA));
+        tabButtons.add(createTabButton("Bağlantı Ayarları", CARD_SETTINGS));
+        tabButtons.add(createTabButton("Şema Farkı (Diff)", CARD_DIFF));
+        tabButtons.add(createTabButton("Git & GitHub", CARD_GIT));
 
         for (JButton btn : tabButtons) {
             navTabBar.add(btn);
@@ -212,12 +210,12 @@ public class MainFrame extends JFrame {
     }
 
     private void updateTabBarStyles() {
-        Color activeBg = isDarkMode ? new Color(36, 40, 48) : Color.WHITE;
-        Color activeFg = isDarkMode ? new Color(96, 165, 250) : new Color(9, 105, 218);
-        Color inactiveBg = isDarkMode ? new Color(24, 26, 32) : new Color(238, 242, 246);
-        Color inactiveFg = isDarkMode ? new Color(156, 163, 175) : new Color(75, 85, 99);
-        Color borderColor = isDarkMode ? new Color(55, 65, 81) : new Color(209, 213, 219);
-        Color activeIndicator = isDarkMode ? new Color(96, 165, 250) : new Color(9, 105, 218);
+        Color activeBg = isDarkMode ? new Color(36, 40, 50) : Color.WHITE;
+        Color activeFg = isDarkMode ? new Color(245, 247, 250) : new Color(25, 30, 40);
+        Color inactiveBg = isDarkMode ? new Color(22, 24, 30) : new Color(240, 243, 246);
+        Color inactiveFg = isDarkMode ? new Color(145, 152, 165) : new Color(90, 100, 115);
+        Color borderColor = isDarkMode ? new Color(45, 50, 60) : new Color(220, 224, 230);
+        Color topPressedColor = isDarkMode ? new Color(100, 110, 125) : new Color(175, 185, 195);
 
         navTabBar.setBackground(inactiveBg);
         navTabBar.setBorder(BorderFactory.createMatteBorder(0, 0, 1, 0, borderColor));
@@ -230,17 +228,17 @@ public class MainFrame extends JFrame {
             btn.setBackground(isActive ? activeBg : inactiveBg);
             btn.setForeground(isActive ? activeFg : inactiveFg);
 
-            // Adjacent borders: Right border between tabs + Bottom active indicator
             int rightBorder = (i == tabButtons.size() - 1) ? 0 : 1;
             if (isActive) {
+                // Subtle gray top pressed highlight & seamless bottom
                 btn.setBorder(BorderFactory.createCompoundBorder(
-                        BorderFactory.createMatteBorder(0, 0, 3, rightBorder, activeIndicator),
-                        BorderFactory.createEmptyBorder(6, 14, 3, 14)
+                        BorderFactory.createMatteBorder(2, 0, 0, rightBorder, topPressedColor),
+                        BorderFactory.createEmptyBorder(6, 16, 8, 16)
                 ));
             } else {
                 btn.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 0, 1, rightBorder, borderColor),
-                        BorderFactory.createEmptyBorder(8, 14, 8, 14)
+                        BorderFactory.createEmptyBorder(8, 16, 8, 16)
                 ));
             }
         }
@@ -248,7 +246,7 @@ public class MainFrame extends JFrame {
 
     private void toggleTheme() {
         isDarkMode = !isDarkMode;
-        themeToggleBtn.setText(isDarkMode ? "☀️ Açık Mod" : "🌙 Koyu Mod");
+        themeToggleBtn.setText(isDarkMode ? "Açık Tema" : "Koyu Tema");
         initLookAndFeel(isDarkMode);
         applyCustomTheme(isDarkMode);
         SwingUtilities.updateComponentTreeUI(this);

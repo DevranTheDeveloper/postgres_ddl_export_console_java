@@ -25,15 +25,15 @@ public class ConnectionPanel extends JPanel {
     private final JTextField schemaField = new JTextField("public");
     private final JTextField outputDirField = new JTextField("./export_output");
 
-    private final JButton testBtn = new JButton("⚡ Bağlantıyı Test Et");
-    private final JButton exportBtn = new JButton("🚀 DDL Dışa Aktar (Export)");
-    private final JButton saveSettingsBtn = new JButton("💾 Ayarları Kaydet");
-    private final JButton openFolderBtn = new JButton("📂 Klasörü Aç");
-    private final JButton zipBtn = new JButton("📦 ZIP İndir");
+    private final JButton testBtn = new JButton("Bağlantıyı Test Et");
+    private final JButton exportBtn = new JButton("DDL Dışa Aktar (Export)");
+    private final JButton saveSettingsBtn = new JButton("Ayarları Kaydet");
+    private final JButton openFolderBtn = new JButton("Klasörü Aç");
+    private final JButton zipBtn = new JButton("ZIP İndir");
 
     public ConnectionPanel(Runnable onStartExport) {
         setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("⚙️ PostgreSQL Bağlantı & Dışa Aktarma Ayarları"));
+        setBorder(BorderFactory.createTitledBorder("PostgreSQL Bağlantı & Dışa Aktarma Ayarları"));
 
         // Form Grid
         JPanel formPanel = new JPanel(new GridBagLayout());

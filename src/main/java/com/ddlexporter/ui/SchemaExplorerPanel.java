@@ -32,10 +32,12 @@ public class SchemaExplorerPanel extends JPanel {
         JPanel topToolbar = new JPanel(new BorderLayout(8, 0));
         topToolbar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
-        JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
-        searchPanel.add(new JLabel("🔍"), BorderLayout.WEST);
+        JPanel searchPanel = new JPanel(new BorderLayout(8, 0));
+        JLabel searchLabel = new JLabel("Ara:");
+        searchLabel.setFont(searchLabel.getFont().deriveFont(Font.BOLD, 12f));
+        searchPanel.add(searchLabel, BorderLayout.WEST);
         searchField = new JTextField();
-        searchField.putClientProperty("JTextField.placeholderText", "Tablo, görünüm veya fonksiyon ara...");
+        searchField.putClientProperty("JTextField.placeholderText", "Tablo, view veya fonksiyon ara...");
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { filterTree(); }
             public void removeUpdate(DocumentEvent e) { filterTree(); }
@@ -44,7 +46,8 @@ public class SchemaExplorerPanel extends JPanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
         topToolbar.add(searchPanel, BorderLayout.CENTER);
 
-        JButton copyBtn = new JButton("📋 SQL Kopyala");
+        JButton copyBtn = new JButton("SQL Kopyala");
+        copyBtn.setFont(copyBtn.getFont().deriveFont(Font.BOLD, 12f));
         copyBtn.addActionListener(e -> copySqlToClipboard());
         topToolbar.add(copyBtn, BorderLayout.EAST);
 
@@ -151,7 +154,7 @@ public class SchemaExplorerPanel extends JPanel {
 
     private void buildTree(String filterText) {
         rootNode.removeAllChildren();
-        rootNode.setUserObject("📁 Veritabanı Şeması (" + allDiscoveredFiles.size() + " Nesne)");
+        rootNode.setUserObject("Veritabanı Şeması (" + allDiscoveredFiles.size() + " Nesne)");
 
         String lowerFilter = filterText.toLowerCase();
 
@@ -164,7 +167,7 @@ public class SchemaExplorerPanel extends JPanel {
         }
 
         for (String db : databases) {
-            DefaultMutableTreeNode dbNode = new DefaultMutableTreeNode("🗄️ " + db);
+            DefaultMutableTreeNode dbNode = new DefaultMutableTreeNode(db);
             rootNode.add(dbNode);
 
             java.util.Set<String> types = new java.util.TreeSet<>();
@@ -175,8 +178,7 @@ public class SchemaExplorerPanel extends JPanel {
             }
 
             for (String type : types) {
-                String icon = getFolderIcon(type);
-                DefaultMutableTreeNode typeNode = new DefaultMutableTreeNode(icon + " " + type);
+                DefaultMutableTreeNode typeNode = new DefaultMutableTreeNode(type);
                 dbNode.add(typeNode);
 
                 for (FileNode fn : allDiscoveredFiles) {
@@ -191,18 +193,6 @@ public class SchemaExplorerPanel extends JPanel {
 
         treeModel.reload();
         expandAllNodes(tree, 0, tree.getRowCount());
-    }
-
-    private String getFolderIcon(String typeName) {
-        if (typeName.contains("TABLE")) return "📋";
-        if (typeName.contains("VIEW")) return "👁️";
-        if (typeName.contains("PROCEDURE") || typeName.contains("FUNCTION")) return "⚡";
-        if (typeName.contains("SEQUENCE")) return "🔢";
-        if (typeName.contains("TYPE")) return "🏷️";
-        if (typeName.contains("INDEX")) return "🔍";
-        if (typeName.contains("TRIGGER")) return "🎯";
-        if (typeName.contains("SCHEMA")) return "📂";
-        return "📁";
     }
 
     private void loadFileContent(File file) {
@@ -282,7 +272,7 @@ public class SchemaExplorerPanel extends JPanel {
 
         @Override
         public String toString() {
-            return "📄 " + fileName;
+            return fileName;
         }
     }
 }

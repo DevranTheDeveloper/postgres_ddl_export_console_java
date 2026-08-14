@@ -26,7 +26,7 @@ public class DiffViewerPanel extends JPanel {
         ));
 
         JPanel leftTitle = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JLabel title = new JLabel("🔄 SQL Şema Farkı (Diff Viewer)");
+        JLabel title = new JLabel("SQL Şema Farkı (Diff Viewer)");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
         leftTitle.add(title);
 
@@ -37,14 +37,14 @@ public class DiffViewerPanel extends JPanel {
         leftTitle.add(fileSelector);
         topBar.add(leftTitle, BorderLayout.WEST);
 
-        JButton reloadBtn = new JButton("🔄 Yenile");
+        JButton reloadBtn = new JButton("Yenile");
         reloadBtn.addActionListener(e -> reloadFiles());
         topBar.add(reloadBtn, BorderLayout.EAST);
         add(topBar, BorderLayout.NORTH);
 
         // Center Split Editor: Left (Previous / Reference), Right (Current Live Export)
         JPanel leftPanel = new JPanel(new BorderLayout(0, 4));
-        leftHeaderLabel = new JLabel("📄 Referans / Önceki Şema");
+        leftHeaderLabel = new JLabel("Referans / Önceki Şema");
         leftHeaderLabel.setFont(leftHeaderLabel.getFont().deriveFont(Font.BOLD, 12f));
         leftHeaderLabel.setForeground(new Color(200, 120, 120));
         leftPanel.add(leftHeaderLabel, BorderLayout.NORTH);
@@ -53,7 +53,7 @@ public class DiffViewerPanel extends JPanel {
         leftPanel.add(new JScrollPane(leftTextArea), BorderLayout.CENTER);
 
         JPanel rightPanel = new JPanel(new BorderLayout(0, 4));
-        rightHeaderLabel = new JLabel("📄 Güncel Canlı DDL Şeması");
+        rightHeaderLabel = new JLabel("Güncel Canlı DDL Şeması");
         rightHeaderLabel.setFont(rightHeaderLabel.getFont().deriveFont(Font.BOLD, 12f));
         rightHeaderLabel.setForeground(new Color(100, 200, 120));
         rightPanel.add(rightHeaderLabel, BorderLayout.NORTH);

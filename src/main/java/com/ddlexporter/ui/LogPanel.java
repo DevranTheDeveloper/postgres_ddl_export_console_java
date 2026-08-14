@@ -9,13 +9,11 @@ public class LogPanel extends JPanel {
 
     public LogPanel() {
         setLayout(new BorderLayout(5, 5));
-        setBorder(BorderFactory.createTitledBorder("📊 Canlı Log Akışı & Durum"));
+        setBorder(BorderFactory.createTitledBorder("Canlı Log Akışı & Durum"));
 
         logArea = new JTextArea(8, 50);
         logArea.setEditable(false);
         logArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
-        logArea.setBackground(new Color(20, 20, 20));
-        logArea.setForeground(new Color(0, 255, 128)); // Hacker-green style output
         logArea.setMargin(new Insets(6, 6, 6, 6));
 
         JScrollPane scrollPane = new JScrollPane(logArea);
@@ -27,7 +25,8 @@ public class LogPanel extends JPanel {
         progressBar.setString("Hazır");
         bottomPanel.add(progressBar, BorderLayout.CENTER);
 
-        JButton clearBtn = new JButton("🗑️ Temizle");
+        JButton clearBtn = new JButton("Temizle");
+        clearBtn.setFont(clearBtn.getFont().deriveFont(Font.PLAIN, 11f));
         clearBtn.addActionListener(e -> logArea.setText(""));
         bottomPanel.add(clearBtn, BorderLayout.EAST);
 

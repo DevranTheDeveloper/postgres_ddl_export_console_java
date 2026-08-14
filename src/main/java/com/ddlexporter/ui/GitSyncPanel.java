@@ -18,11 +18,11 @@ public class GitSyncPanel extends JPanel {
 
         // Top Header
         JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
-        JLabel titleLabel = new JLabel("🐙 Git & GitHub Senkronizasyon Merkezi");
+        JLabel titleLabel = new JLabel("Git & GitHub Senkronizasyon Merkezi");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
         headerPanel.add(titleLabel, BorderLayout.WEST);
 
-        refreshBtn = new JButton("🔄 Durumu Yenile");
+        refreshBtn = new JButton("Durumu Yenile");
         refreshBtn.addActionListener(e -> refreshGitStatus());
         headerPanel.add(refreshBtn, BorderLayout.EAST);
         add(headerPanel, BorderLayout.NORTH);
@@ -54,7 +54,7 @@ public class GitSyncPanel extends JPanel {
         formRow.add(commitMsgField, BorderLayout.CENTER);
         bottomPanel.add(formRow, BorderLayout.NORTH);
 
-        syncBtn = new JButton("🚀 Değişiklikleri Commit Et & GitHub'a Push'la");
+        syncBtn = new JButton("Değişiklikleri Commit Et & GitHub'a Push'la");
         syncBtn.setBackground(new Color(40, 140, 40));
         syncBtn.setForeground(Color.WHITE);
         syncBtn.setFont(syncBtn.getFont().deriveFont(Font.BOLD, 13f));
