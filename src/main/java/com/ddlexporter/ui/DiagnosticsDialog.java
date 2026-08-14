@@ -30,30 +30,47 @@ public class DiagnosticsDialog extends JDialog {
         super(owner, "Sistem Sağlığı, Uyarı ve Kritik Hata Raporu", true);
         this.diagnosticsManager = diagnosticsManager;
 
-        setSize(860, 560);
-        setMinimumSize(new Dimension(650, 420));
+        setSize(920, 580);
+        setMinimumSize(new Dimension(720, 460));
         setLocationRelativeTo(owner);
 
         JPanel mainPanel = new JPanel(new BorderLayout(10, 10));
         mainPanel.setBorder(BorderFactory.createEmptyBorder(12, 14, 12, 14));
 
-        // 1. Header Summary & Filter Bar
-        JPanel header = new JPanel(new BorderLayout(8, 0));
-        headerTitle.setFont(headerTitle.getFont().deriveFont(Font.BOLD, 14f));
-        header.add(headerTitle, BorderLayout.WEST);
+        // 1. Header: 2-Row Structured Header (Zero Overlap Guaranteed)
+        JPanel headerContainer = new JPanel(new GridLayout(2, 1, 0, 8));
+        headerContainer.setBorder(BorderFactory.createEmptyBorder(0, 0, 4, 0));
 
-        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        filterPanel.add(new JLabel("Filtrele:"));
+        // Row 1: Main Title + Colored Stats Badge
+        JPanel row1 = new JPanel(new BorderLayout(8, 0));
+        JLabel titleLabel = new JLabel("Sistem Sağlığı & Teşhis Raporu");
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+        row1.add(titleLabel, BorderLayout.WEST);
+
+        headerTitle.setFont(headerTitle.getFont().deriveFont(Font.BOLD, 13f));
+        row1.add(headerTitle, BorderLayout.EAST);
+        headerContainer.add(row1);
+
+        // Row 2: Filter Toolbar (Left) + Clean Action Buttons (Right)
+        JPanel row2 = new JPanel(new BorderLayout(8, 0));
+
+        JPanel filterPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JLabel filterLabel = new JLabel("Filtrele:");
+        filterLabel.setFont(filterLabel.getFont().deriveFont(Font.BOLD, 12f));
+        filterPanel.add(filterLabel);
+        filterCombo.setPreferredSize(new Dimension(160, 26));
         filterCombo.addActionListener(e -> refreshTable());
         filterPanel.add(filterCombo);
+        row2.add(filterPanel, BorderLayout.WEST);
 
+        JPanel actionBtnsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
         JButton clearResolvedBtn = new JButton("Çözülenleri Temizle");
         clearResolvedBtn.setFont(clearResolvedBtn.getFont().deriveFont(Font.PLAIN, 11f));
         clearResolvedBtn.addActionListener(e -> {
             diagnosticsManager.clearResolved();
             refreshTable();
         });
-        filterPanel.add(clearResolvedBtn);
+        actionBtnsPanel.add(clearResolvedBtn);
 
         JButton clearAllBtn = new JButton("Tümünü Temizle");
         clearAllBtn.setFont(clearAllBtn.getFont().deriveFont(Font.PLAIN, 11f));
@@ -65,10 +82,11 @@ public class DiagnosticsDialog extends JDialog {
                 refreshTable();
             }
         });
-        filterPanel.add(clearAllBtn);
+        actionBtnsPanel.add(clearAllBtn);
+        row2.add(actionBtnsPanel, BorderLayout.EAST);
 
-        header.add(filterPanel, BorderLayout.EAST);
-        mainPanel.add(header, BorderLayout.NORTH);
+        headerContainer.add(row2);
+        mainPanel.add(headerContainer, BorderLayout.NORTH);
 
         // 2. Center: Split Pane (Top Table / Bottom Details + Suggestion)
         String[] cols = {"Durum", "Seviye", "Oluşma / Çözüm Zamanı", "Başlık", "Kaynak"};
@@ -82,8 +100,8 @@ public class DiagnosticsDialog extends JDialog {
         issuesTable.getColumnModel().getColumn(0).setPreferredWidth(90);
         issuesTable.getColumnModel().getColumn(1).setPreferredWidth(95);
         issuesTable.getColumnModel().getColumn(2).setPreferredWidth(170);
-        issuesTable.getColumnModel().getColumn(3).setPreferredWidth(280);
-        issuesTable.getColumnModel().getColumn(4).setPreferredWidth(110);
+        issuesTable.getColumnModel().getColumn(3).setPreferredWidth(320);
+        issuesTable.getColumnModel().getColumn(4).setPreferredWidth(120);
 
         // Custom Renderers for Status and Level
         issuesTable.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
@@ -139,7 +157,7 @@ public class DiagnosticsDialog extends JDialog {
         detailsPanel.add(suggestionCard);
 
         JSplitPane splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT, new JScrollPane(issuesTable), detailsPanel);
-        splitPane.setDividerLocation(200);
+        splitPane.setDividerLocation(210);
         mainPanel.add(splitPane, BorderLayout.CENTER);
 
         // 3. Footer Action Controls
@@ -210,7 +228,7 @@ public class DiagnosticsDialog extends JDialog {
         int activeWarns = diagnosticsManager.getActiveWarningCount();
         int resolvedCount = diagnosticsManager.getResolvedIssues().size();
 
-        headerTitle.setText(String.format("Aktif Olaylar: %d Kritik Hata, %d Uyarı (Çözülenler: %d)",
+        headerTitle.setText(String.format("Aktif: %d Kritik Hata, %d Uyarı  |  Çözülen: %d",
                 activeErrs, activeWarns, resolvedCount));
 
         if (activeErrs > 0) {
