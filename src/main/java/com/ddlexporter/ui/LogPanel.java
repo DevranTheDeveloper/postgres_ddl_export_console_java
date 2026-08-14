@@ -9,6 +9,7 @@ public class LogPanel extends JPanel {
     private final StyledDocument doc;
     private final JLabel statusLabel;
     private final JProgressBar progressBar;
+    private final JLabel percentLabel;
     private boolean isDark = false;
 
     public LogPanel() {
@@ -25,27 +26,35 @@ public class LogPanel extends JPanel {
         scrollPane.setPreferredSize(new Dimension(0, 150));
         add(scrollPane, BorderLayout.CENTER);
 
-        // Bottom Status & Progress Container
-        JPanel bottomPanel = new JPanel(new BorderLayout(12, 0));
+        // Bottom Status & Progress Container (Clean layout, natural gaps, no text collision)
+        JPanel bottomPanel = new JPanel(new BorderLayout(8, 0));
         bottomPanel.setBorder(BorderFactory.createEmptyBorder(4, 4, 4, 4));
 
-        // Left: Clean status text that is NEVER cut by progress bar animation
+        // 1. Left: Dynamic Status Text (no artificial 280px gap)
         statusLabel = new JLabel("Durum: Hazır");
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 12f));
-        statusLabel.setPreferredSize(new Dimension(280, 26));
+        statusLabel.setBorder(BorderFactory.createEmptyBorder(0, 2, 0, 4));
         bottomPanel.add(statusLabel, BorderLayout.WEST);
 
-        // Center: Spacious modern progress bar with dedicated height (26px)
-        progressBar = new JProgressBar(0, 100);
-        progressBar.setPreferredSize(new Dimension(0, 26));
-        progressBar.setStringPainted(true);
-        progressBar.setString("%0");
-        progressBar.setFont(progressBar.getFont().deriveFont(Font.BOLD, 11f));
-        bottomPanel.add(progressBar, BorderLayout.CENTER);
+        // 2. Center: Sleek modern Progress Track + Percentage Label on the right
+        JPanel centerProgressPanel = new JPanel(new BorderLayout(8, 0));
+        centerProgressPanel.setOpaque(false);
 
-        // Right: Clear button
+        progressBar = new JProgressBar(0, 100);
+        progressBar.setPreferredSize(new Dimension(0, 14));
+        progressBar.setStringPainted(false); // Clean track without ugly text overlay
+        centerProgressPanel.add(progressBar, BorderLayout.CENTER);
+
+        percentLabel = new JLabel("%0");
+        percentLabel.setFont(percentLabel.getFont().deriveFont(Font.BOLD, 11f));
+        percentLabel.setPreferredSize(new Dimension(45, 24));
+        centerProgressPanel.add(percentLabel, BorderLayout.EAST);
+
+        bottomPanel.add(centerProgressPanel, BorderLayout.CENTER);
+
+        // 3. Right: Clear button
         JButton clearBtn = new JButton("Temizle");
-        clearBtn.setPreferredSize(new Dimension(80, 26));
+        clearBtn.setPreferredSize(new Dimension(75, 24));
         clearBtn.setFont(clearBtn.getFont().deriveFont(Font.PLAIN, 11f));
         clearBtn.addActionListener(e -> textPane.setText(""));
         bottomPanel.add(clearBtn, BorderLayout.EAST);
@@ -122,14 +131,14 @@ public class LogPanel extends JPanel {
     public void setProgressIndeterminate(boolean indeterminate, String statusText) {
         statusLabel.setText("Durum: " + statusText);
         progressBar.setIndeterminate(indeterminate);
-        progressBar.setString(indeterminate ? "İşleniyor..." : "Hazır");
+        percentLabel.setText(indeterminate ? "..." : "%0");
     }
 
     public void setProgress(int value, String statusText) {
         statusLabel.setText("Durum: " + statusText);
         progressBar.setIndeterminate(false);
         progressBar.setValue(value);
-        progressBar.setString("%" + value);
+        percentLabel.setText("%" + value);
     }
 
     public void applyTheme(boolean isDark) {
@@ -138,10 +147,12 @@ public class LogPanel extends JPanel {
             textPane.setBackground(new Color(18, 20, 24));
             textPane.setCaretColor(Color.WHITE);
             statusLabel.setForeground(new Color(220, 225, 235));
+            percentLabel.setForeground(new Color(200, 205, 215));
         } else {
             textPane.setBackground(new Color(248, 250, 252));
             textPane.setCaretColor(Color.BLACK);
             statusLabel.setForeground(new Color(30, 40, 55));
+            percentLabel.setForeground(new Color(60, 70, 85));
         }
     }
 }
