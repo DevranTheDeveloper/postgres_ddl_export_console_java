@@ -19,11 +19,19 @@ import java.util.zip.ZipOutputStream;
 public class ConnectionPanel extends JPanel {
     private final JTextField hostField = new JTextField("localhost");
     private final JTextField portField = new JTextField("5432");
-    private final JTextField dbNameField = new JTextField("denemeDatabase");
-    private final JTextField schemaField = new JTextField("public");
     private final JTextField userField = new JTextField("postgres");
     private final JPasswordField passField = new JPasswordField("12345");
+    private final JComboBox<String> sslModeBox = new JComboBox<>(new String[]{"Devre Dışı (disable)", "Tercih Et (prefer)", "Zorunlu (require)"});
+
+    private final JTextField dbNameField = new JTextField("denemeDatabase");
+    private final JTextField schemaField = new JTextField("public");
     private final JTextField outputDirField = new JTextField("./export_output");
+
+    private final JCheckBox chkTables = new JCheckBox("Tablolar (TABLE)", true);
+    private final JCheckBox chkViews = new JCheckBox("Görünümler (VIEW)", true);
+    private final JCheckBox chkFunctions = new JCheckBox("Fonksiyonlar (FUNCTION)", true);
+    private final JCheckBox chkSequences = new JCheckBox("Diziler (SEQUENCE)", true);
+    private final JCheckBox chkIndexes = new JCheckBox("İndeksler (INDEX)", true);
 
     private final JButton testBtn = new JButton("Bağlantıyı Test Et");
     private final JButton exportBtn = new JButton("DDL Dışa Aktar (Export)");
@@ -32,107 +40,135 @@ public class ConnectionPanel extends JPanel {
     private final JButton zipBtn = new JButton("ZIP İndir");
 
     public ConnectionPanel(Runnable onStartExport) {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(12, 12));
+        setBorder(BorderFactory.createEmptyBorder(12, 16, 12, 16));
         setOpaque(false);
 
-        // Center Container: Maximum width card layout (Clean, compact, no endless stacked bars)
-        JPanel centerWrapper = new JPanel(new GridBagLayout());
-        centerWrapper.setOpaque(false);
+        // Center: 2 Balanced Side-by-Side Cards (Fills 100% Width Perfectly)
+        JPanel gridContainer = new JPanel(new GridLayout(1, 2, 16, 0));
+        gridContainer.setOpaque(false);
 
-        JPanel cardPanel = new JPanel(new BorderLayout(0, 16));
-        cardPanel.setPreferredSize(new Dimension(680, 480));
-        cardPanel.setMaximumSize(new Dimension(720, 520));
-        cardPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createTitledBorder("PostgreSQL Bağlantı & Dışa Aktarma Ayarları"),
-                BorderFactory.createEmptyBorder(12, 16, 16, 16)
+        // --- LEFT CARD: Sunucu ve Kimlik Doğrulama ---
+        JPanel leftCard = new JPanel(new BorderLayout(0, 12));
+        leftCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Sunucu & Kimlik Doğrulama (Server & Auth)"),
+                BorderFactory.createEmptyBorder(12, 14, 14, 14)
         ));
 
-        // Form Fields (2 Columns Grid)
-        JPanel fieldsPanel = new JPanel(new GridBagLayout());
-        fieldsPanel.setOpaque(false);
+        JPanel leftForm = new JPanel(new GridBagLayout());
+        leftForm.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
 
-        // Row 1: Host (75%) & Port (25%)
-        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.75;
-        fieldsPanel.add(createFieldGroup("Sunucu (Host):", hostField), gbc);
+        // Row 0: Host (70%) + Port (30%)
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.7;
+        leftForm.add(createFieldGroup("Sunucu Adresi (Host):", hostField), gbc);
 
-        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.25;
-        fieldsPanel.add(createFieldGroup("Port:", portField), gbc);
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.3;
+        leftForm.add(createFieldGroup("Port:", portField), gbc);
 
-        // Row 2: Database Name (50%) & Schema (50%)
-        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.5;
-        fieldsPanel.add(createFieldGroup("Veritabanı Adı:", dbNameField), gbc);
+        // Row 1: Username (Full Width)
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2; gbc.weightx = 1.0;
+        leftForm.add(createFieldGroup("Kullanıcı Adı (Username):", userField), gbc);
 
-        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 0.5;
-        fieldsPanel.add(createFieldGroup("Şema (Schema):", schemaField), gbc);
+        // Row 2: Password (Full Width)
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; gbc.weightx = 1.0;
+        leftForm.add(createFieldGroup("Şifre (Password):", passField), gbc);
 
-        // Row 3: Username (50%) & Password (50%)
-        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.5;
-        fieldsPanel.add(createFieldGroup("Kullanıcı Adı:", userField), gbc);
-
-        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 0.5;
-        fieldsPanel.add(createFieldGroup("Şifre:", passField), gbc);
-
-        // Row 4: Output Directory (Full Width with Browse button)
+        // Row 3: SSL Mode
         gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.weightx = 1.0;
+        leftForm.add(createFieldGroup("SSL Bağlantı Modu:", sslModeBox), gbc);
+
+        leftCard.add(leftForm, BorderLayout.CENTER);
+
+        // Left Actions
+        JPanel leftActionPanel = new JPanel(new GridLayout(1, 1, 0, 0));
+        leftActionPanel.setOpaque(false);
+        testBtn.setPreferredSize(new Dimension(0, 36));
+        testBtn.setFont(testBtn.getFont().deriveFont(Font.BOLD, 12f));
+        testBtn.addActionListener(e -> testConnection());
+        leftActionPanel.add(testBtn);
+        leftCard.add(leftActionPanel, BorderLayout.SOUTH);
+
+        gridContainer.add(leftCard);
+
+        // --- RIGHT CARD: Veritabanı ve Dışa Aktarma Kapsamı ---
+        JPanel rightCard = new JPanel(new BorderLayout(0, 12));
+        rightCard.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("Veritabanı & Dışa Aktarma Kapsamı (Scope & Output)"),
+                BorderFactory.createEmptyBorder(12, 14, 14, 14)
+        ));
+
+        JPanel rightForm = new JPanel(new GridBagLayout());
+        rightForm.setOpaque(false);
+
+        // Row 0: DB Name (50%) + Schema (50%)
+        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 1; gbc.weightx = 0.5;
+        rightForm.add(createFieldGroup("Veritabanı Adı (DB Name):", dbNameField), gbc);
+
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.5;
+        rightForm.add(createFieldGroup("Şema (Schema):", schemaField), gbc);
+
+        // Row 1: Output Directory with browse
+        gbc.gridx = 0; gbc.gridy = 1; gbc.gridwidth = 2; gbc.weightx = 1.0;
         JPanel dirGroup = new JPanel(new BorderLayout(6, 0));
         dirGroup.setOpaque(false);
         dirGroup.add(outputDirField, BorderLayout.CENTER);
         JButton browseBtn = new JButton("Gözat...");
         browseBtn.addActionListener(e -> chooseOutputDirectory());
         dirGroup.add(browseBtn, BorderLayout.EAST);
-        fieldsPanel.add(createFieldGroup("Çıktı Dizini (Export Directory):", dirGroup), gbc);
+        rightForm.add(createFieldGroup("Çıktı Dizini (Output Directory):", dirGroup), gbc);
 
-        cardPanel.add(fieldsPanel, BorderLayout.CENTER);
+        // Row 2: Scope Checkboxes
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2; gbc.weightx = 1.0;
+        JPanel checksPanel = new JPanel(new GridLayout(2, 3, 4, 4));
+        checksPanel.setOpaque(false);
+        checksPanel.setBorder(BorderFactory.createTitledBorder("Dışa Aktarılacak Nesne Tipleri"));
+        checksPanel.add(chkTables);
+        checksPanel.add(chkViews);
+        checksPanel.add(chkFunctions);
+        checksPanel.add(chkSequences);
+        checksPanel.add(chkIndexes);
+        rightForm.add(checksPanel, gbc);
 
-        // Action Buttons: Modern Horizontal Layout
-        JPanel actionsContainer = new JPanel(new GridLayout(2, 1, 8, 8));
-        actionsContainer.setOpaque(false);
+        rightCard.add(rightForm, BorderLayout.CENTER);
 
-        // Primary Row
-        JPanel primaryRow = new JPanel(new GridLayout(1, 3, 10, 0));
-        primaryRow.setOpaque(false);
+        // Right Actions (Export & Save)
+        JPanel rightActionPanel = new JPanel(new GridLayout(1, 2, 10, 0));
+        rightActionPanel.setOpaque(false);
 
-        testBtn.setPreferredSize(new Dimension(0, 36));
-        testBtn.setFont(testBtn.getFont().deriveFont(Font.BOLD, 12f));
-        testBtn.addActionListener(e -> testConnection());
-        primaryRow.add(testBtn);
-
-        exportBtn.setPreferredSize(new Dimension(0, 38));
+        exportBtn.setPreferredSize(new Dimension(0, 36));
         exportBtn.setBackground(new Color(34, 139, 34));
         exportBtn.setForeground(Color.WHITE);
-        exportBtn.setFont(exportBtn.getFont().deriveFont(Font.BOLD, 13f));
+        exportBtn.setFont(exportBtn.getFont().deriveFont(Font.BOLD, 12f));
         exportBtn.addActionListener(e -> {
             if (onStartExport != null) onStartExport.run();
         });
-        primaryRow.add(exportBtn);
+        rightActionPanel.add(exportBtn);
 
         saveSettingsBtn.setPreferredSize(new Dimension(0, 36));
         saveSettingsBtn.setFont(saveSettingsBtn.getFont().deriveFont(Font.BOLD, 12f));
         saveSettingsBtn.addActionListener(e -> saveSettingsToJson());
-        primaryRow.add(saveSettingsBtn);
+        rightActionPanel.add(saveSettingsBtn);
 
-        actionsContainer.add(primaryRow);
+        rightCard.add(rightActionPanel, BorderLayout.SOUTH);
 
-        // Secondary Row (Quick Tools)
-        JPanel secondaryRow = new JPanel(new GridLayout(1, 2, 10, 0));
-        secondaryRow.setOpaque(false);
+        gridContainer.add(rightCard);
+        add(gridContainer, BorderLayout.CENTER);
 
-        openFolderBtn.setPreferredSize(new Dimension(0, 32));
+        // --- BOTTOM BAR: Hızlı Yardımcı Araçlar ---
+        JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+        bottomBar.setOpaque(false);
+        openFolderBtn.setPreferredSize(new Dimension(140, 30));
         openFolderBtn.addActionListener(e -> openOutputFolder());
-        secondaryRow.add(openFolderBtn);
+        bottomBar.add(openFolderBtn);
 
-        zipBtn.setPreferredSize(new Dimension(0, 32));
+        zipBtn.setPreferredSize(new Dimension(140, 30));
         zipBtn.addActionListener(e -> exportAsZip());
-        secondaryRow.add(zipBtn);
+        bottomBar.add(zipBtn);
 
-        actionsContainer.add(secondaryRow);
-        cardPanel.add(actionsContainer, BorderLayout.SOUTH);
-
-        centerWrapper.add(cardPanel);
-        add(centerWrapper, BorderLayout.CENTER);
+        add(bottomBar, BorderLayout.SOUTH);
     }
 
     private JPanel createFieldGroup(String labelText, JComponent field) {
