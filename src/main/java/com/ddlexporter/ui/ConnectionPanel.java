@@ -164,15 +164,15 @@ public class ConnectionPanel extends JPanel {
             @Override
             protected void done() {
                 testBtn.setEnabled(true);
-                testBtn.setText("⚡ Bağlantıyı Test Et");
+                testBtn.setText("Bağlantıyı Test Et");
                 try {
                     if (get()) {
                         JOptionPane.showMessageDialog(ConnectionPanel.this,
-                                "✅ PostgreSQL Veritabanı Bağlantısı Başarılı!",
-                                "Bağlantı Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                                "PostgreSQL Veritabanı Bağlantısı Başarılı!",
+                                "Bağlantı Başarılı (Onay)", JOptionPane.INFORMATION_MESSAGE);
                     } else {
                         JOptionPane.showMessageDialog(ConnectionPanel.this,
-                                "❌ Bağlantı Başarısız:\n" + errorMessage,
+                                "Bağlantı Başarısız (Ret):\n" + errorMessage,
                                 "Bağlantı Hatası", JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (Exception ex) {
