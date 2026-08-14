@@ -18,6 +18,7 @@ public class MainFrame extends JFrame {
     private static final String CARD_SETTINGS = "SETTINGS";
     private static final String CARD_DIFF = "DIFF";
     private static final String CARD_GIT = "GIT";
+    private static final String CARD_METRICS = "METRICS";
 
     private final ProfileManager profileManager = new ProfileManager();
     private final JComboBox<String> profileComboBox = new JComboBox<>();
@@ -26,11 +27,12 @@ public class MainFrame extends JFrame {
     private final SchemaExplorerPanel schemaExplorerPanel;
     private final DiffViewerPanel diffViewerPanel;
     private final GitSyncPanel gitSyncPanel;
+    private final ServerStatusPanel serverStatusPanel;
     private final LogPanel logPanel;
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentCards = new JPanel(cardLayout);
-    private final JPanel navTabBar = new JPanel(new GridLayout(1, 4, 0, 0));
+    private final JPanel navTabBar = new JPanel(new GridLayout(1, 5, 0, 0));
     private final List<JButton> tabButtons = new ArrayList<>();
     private String currentCard = CARD_SCHEMA;
 
@@ -63,6 +65,7 @@ public class MainFrame extends JFrame {
         // Sub-Panels
         connectionPanel = new ConnectionPanel(this::startExportProcess);
         schemaExplorerPanel = new SchemaExplorerPanel();
+        serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi);
         diffViewerPanel = new DiffViewerPanel();
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
@@ -89,6 +92,7 @@ public class MainFrame extends JFrame {
         // 2. Center Content Cards (CardLayout seamlessly attached to tab bar)
         contentCards.add(schemaExplorerPanel, CARD_SCHEMA);
         contentCards.add(connectionPanel, CARD_SETTINGS);
+        contentCards.add(serverStatusPanel, CARD_METRICS);
         contentCards.add(diffViewerPanel, CARD_DIFF);
         contentCards.add(gitSyncPanel, CARD_GIT);
 
@@ -176,6 +180,7 @@ public class MainFrame extends JFrame {
 
         tabButtons.add(createTabButton("Şema & SQL Gezgini", CARD_SCHEMA));
         tabButtons.add(createTabButton("Bağlantı Ayarları", CARD_SETTINGS));
+        tabButtons.add(createTabButton("Sunucu Durumu", CARD_METRICS));
         tabButtons.add(createTabButton("Şema Farkı (Diff)", CARD_DIFF));
         tabButtons.add(createTabButton("Git & GitHub", CARD_GIT));
 
@@ -200,6 +205,10 @@ public class MainFrame extends JFrame {
         this.currentCard = cardKey;
         cardLayout.show(contentCards, cardKey);
         updateTabBarStyles();
+
+        if (CARD_METRICS.equals(cardKey)) {
+            serverStatusPanel.refreshMetrics();
+        }
     }
 
     private void updateTabBarStyles() {
@@ -268,6 +277,7 @@ public class MainFrame extends JFrame {
 
         updateTabBarStyles();
         schemaExplorerPanel.applyTheme(dark);
+        serverStatusPanel.applyTheme(dark);
         logPanel.applyTheme(dark);
         diffViewerPanel.applyTheme(dark);
     }
