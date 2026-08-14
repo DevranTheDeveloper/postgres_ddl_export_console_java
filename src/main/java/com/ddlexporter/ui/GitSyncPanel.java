@@ -55,8 +55,6 @@ public class GitSyncPanel extends JPanel {
         bottomPanel.add(formRow, BorderLayout.NORTH);
 
         syncBtn = new JButton("Değişiklikleri Commit Et & GitHub'a Push'la");
-        syncBtn.setBackground(new Color(40, 140, 40));
-        syncBtn.setForeground(Color.WHITE);
         syncBtn.setFont(syncBtn.getFont().deriveFont(Font.BOLD, 13f));
         syncBtn.setPreferredSize(new Dimension(200, 38));
         syncBtn.addActionListener(e -> pushToGit());

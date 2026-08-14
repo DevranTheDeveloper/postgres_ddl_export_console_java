@@ -42,19 +42,22 @@ public class LogPanel extends JPanel {
     }
 
     public void appendLog(String message) {
-        if (message == null) return;
+        if (message == null)
+            return;
         SwingUtilities.invokeLater(() -> {
             try {
                 // Color palette
                 Color timeColor = isDark ? new Color(156, 163, 175) : new Color(107, 114, 128);
-                Color infoColor = isDark ? new Color(74, 222, 128) : new Color(22, 163, 74);   // Green
+                Color infoColor = isDark ? new Color(74, 222, 128) : new Color(22, 163, 74); // Green
                 Color errorColor = isDark ? new Color(248, 113, 113) : new Color(220, 38, 38); // Red
-                Color warnColor = isDark ? new Color(251, 191, 36) : new Color(217, 119, 6);   // Amber
+                Color warnColor = isDark ? new Color(251, 191, 36) : new Color(217, 119, 6); // Amber
                 Color textColor = isDark ? new Color(243, 244, 246) : new Color(31, 41, 55);
 
-                boolean isError = message.contains("[ERROR]") || message.contains("[HATA]") || message.contains("Başarısız") || message.contains("Hata");
+                boolean isError = message.contains("[ERROR]") || message.contains("[HATA]")
+                        || message.contains("Başarısız") || message.contains("Hata");
                 boolean isWarn = message.contains("[WARN]") || message.contains("[UYARI]");
-                boolean isSuccess = message.contains("Başarılı") || message.contains("Tamamlandı") || message.contains("[INFO]");
+                boolean isSuccess = message.contains("Başarılı") || message.contains("Tamamlandı")
+                        || message.contains("[INFO]");
 
                 // Timestamp matching: [YYYY-MM-DD HH:mm:ss]
                 if (message.startsWith("[") && message.indexOf("]") > 0 && message.length() > 21) {
@@ -70,7 +73,8 @@ public class LogPanel extends JPanel {
                             String tag = rest.substring(0, tagClose + 1);
                             String body = rest.substring(tagClose + 1);
 
-                            Color tagColor = isError ? errorColor : (isWarn ? warnColor : (isSuccess ? infoColor : textColor));
+                            Color tagColor = isError ? errorColor
+                                    : (isWarn ? warnColor : (isSuccess ? infoColor : textColor));
                             appendStyledText(tag, tagColor, true);
                             appendStyledText(body + "\n", textColor, false);
                             scrollToEnd();
@@ -84,7 +88,8 @@ public class LogPanel extends JPanel {
                     appendStyledText(message + "\n", msgColor, isError);
                 }
                 scrollToEnd();
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         });
     }
 
@@ -94,7 +99,8 @@ public class LogPanel extends JPanel {
             StyleConstants.setForeground(set, color);
             StyleConstants.setBold(set, bold);
             doc.insertString(doc.getLength(), text, set);
-        } catch (BadLocationException ignored) {}
+        } catch (BadLocationException ignored) {
+        }
     }
 
     private void scrollToEnd() {
