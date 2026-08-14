@@ -22,6 +22,7 @@ public class MainFrame extends JFrame {
 
     private final ProfileManager profileManager = new ProfileManager();
     private final AuditHistoryManager auditManager = new AuditHistoryManager();
+    private final SystemDiagnosticsManager diagnosticsManager = new SystemDiagnosticsManager();
     private final JComboBox<String> profileComboBox = new JComboBox<>();
 
     private final ConnectionPanel connectionPanel;
@@ -66,7 +67,7 @@ public class MainFrame extends JFrame {
         // Sub-Panels
         connectionPanel = new ConnectionPanel(this::startExportProcess);
         schemaExplorerPanel = new SchemaExplorerPanel();
-        serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager);
+        serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager, diagnosticsManager);
         diffViewerPanel = new DiffViewerPanel();
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
@@ -486,7 +487,13 @@ public class MainFrame extends JFrame {
                             "İşlem Başarılı", JOptionPane.INFORMATION_MESSAGE);
                 } else {
                     auditManager.logAction("DDL Dışa Aktarma", settings.getUsername(), settings.getDatabaseName() + "/" + settings.getSchema(), "Hata: " + exportError.getMessage(), duration, false);
+                    diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
+                            "DDL Dışa Aktarma Başarısız Oldu",
+                            "DDL Scripter Motoru",
+                            "Dışa aktarma işlemi sırasında hata fırlatıldı:\n" + exportError.getMessage(),
+                            "Veritabanı izinlerini ve tablo erişim haklarını doğrulayın.");
                     serverStatusPanel.loadAuditHistory();
+                    serverStatusPanel.updateDiagnosticsUi();
                     logPanel.setProgress(0, "Hata Oluştu!");
                     statusLabel.setText("Hata: " + exportError.getMessage());
                     logPanel.appendLog("[HATA] " + exportError.getMessage());

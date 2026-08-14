@@ -6,6 +6,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
@@ -15,6 +17,7 @@ import java.util.function.Supplier;
 public class ServerStatusPanel extends JPanel {
     private final Supplier<PostgresqlConfigurationSettings> settingsSupplier;
     private final AuditHistoryManager auditManager;
+    private final SystemDiagnosticsManager diagnosticsManager;
 
     // Top KPI Labels
     private final JLabel statusValueLabel = new JLabel("Bilinmiyor");
@@ -23,6 +26,8 @@ public class ServerStatusPanel extends JPanel {
     private final JLabel dbSizeValueLabel = new JLabel("0 MB");
     private final JLabel cacheHitValueLabel = new JLabel("%0.0");
     private final JLabel txStatsLabel = new JLabel("Commit: 0 | Rollback: 0");
+    private final JLabel diagnosticsValueLabel = new JLabel("0 Hata | 0 Uyarı");
+    private final JLabel diagnosticsSubLabel = new JLabel("Detaylar için tıklayın ↗");
 
     // Charts
     private final MetricsChartPanel chartPanel = new MetricsChartPanel();
@@ -37,9 +42,12 @@ public class ServerStatusPanel extends JPanel {
     private final DefaultTableModel historyTableModel;
     private final JTable historyTable;
 
+    private final DefaultTableModel diagnosticsTableModel;
+    private final JTable diagnosticsTable;
+
     private final JTabbedPane detailsTabbedPane;
 
-    private final JCheckBox autoRefreshBox = new JCheckBox("5 saniyede bir otomatik yenile", false);
+    private final JCheckBox autoRefreshBox = new JCheckBox("5 sn otomatik yenile", false);
     private final JButton refreshBtn = new JButton("Yenile");
     private final JButton testModeBtn = new JButton("Canlı Testi Başlat");
     private final JLabel lastUpdateLabel = new JLabel("Son Güncelleme: Henüz yapılmadı");
@@ -50,15 +58,18 @@ public class ServerStatusPanel extends JPanel {
     private int simulationStep = 0;
     private boolean isDark = false;
 
-    public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier, AuditHistoryManager auditManager) {
+    public ServerStatusPanel(Supplier<PostgresqlConfigurationSettings> settingsSupplier,
+                             AuditHistoryManager auditManager,
+                             SystemDiagnosticsManager diagnosticsManager) {
         this.settingsSupplier = settingsSupplier;
         this.auditManager = auditManager;
+        this.diagnosticsManager = diagnosticsManager;
 
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
         setOpaque(false);
 
-        // 1. Top Section: Header Toolbar + 4 KPI Cards
+        // 1. Top Section: Header Toolbar + 5 KPI Cards
         JPanel topContainer = new JPanel(new BorderLayout(0, 8));
         topContainer.setOpaque(false);
 
@@ -87,20 +98,24 @@ public class ServerStatusPanel extends JPanel {
         headerToolbar.add(controls, BorderLayout.EAST);
         topContainer.add(headerToolbar, BorderLayout.NORTH);
 
-        // 4 KPI Cards Grid
-        JPanel cardsGrid = new JPanel(new GridLayout(1, 4, 10, 0));
+        // 5 KPI Cards Grid (Equal Width)
+        JPanel cardsGrid = new JPanel(new GridLayout(1, 5, 8, 0));
         cardsGrid.setOpaque(false);
         cardsGrid.setPreferredSize(new Dimension(0, 85));
 
-        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel));
-        cardsGrid.add(createKpiCard("Aktif Bağlantılar", connectionsValueLabel, new JLabel("Maksimum Havuz Kapasitesi")));
-        cardsGrid.add(createKpiCard("Veritabanı Boyutu", dbSizeValueLabel, new JLabel("Toplam Disk Alanı")));
-        cardsGrid.add(createKpiCard("Cache Hit (Önbellek)", cacheHitValueLabel, txStatsLabel));
+        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel, null));
+        cardsGrid.add(createKpiCard("Aktif Bağlantılar", connectionsValueLabel, new JLabel("Havuz Kapasitesi"), null));
+        cardsGrid.add(createKpiCard("Veritabanı Boyutu", dbSizeValueLabel, new JLabel("Toplam Disk Alanı"), null));
+        cardsGrid.add(createKpiCard("Cache Hit (Önbellek)", cacheHitValueLabel, txStatsLabel, null));
+
+        // Clickable 5th Card: System Diagnostics & Health Center
+        JPanel diagnosticsCard = createKpiCard("Sistem Sağlığı & Uyarılar", diagnosticsValueLabel, diagnosticsSubLabel, this::openDiagnosticsDialog);
+        cardsGrid.add(diagnosticsCard);
 
         topContainer.add(cardsGrid, BorderLayout.CENTER);
         add(topContainer, BorderLayout.NORTH);
 
-        // 2. Center Split: Left Chart | Right 3-Tab Detailed Inspector
+        // 2. Center Split: Left Chart | Right 4-Tab Detailed Inspector
         JPanel centerContainer = new JPanel(new GridLayout(1, 2, 12, 0));
         centerContainer.setOpaque(false);
 
@@ -110,7 +125,7 @@ public class ServerStatusPanel extends JPanel {
         chartWrapper.add(chartPanel, BorderLayout.CENTER);
         centerContainer.add(chartWrapper);
 
-        // Right: 3-Tab Detailed Inspector
+        // Right: 4-Tab Detailed Inspector
         detailsTabbedPane = new JTabbedPane();
 
         // --- Sub-Tab 1: Active Queries (pg_stat_activity) ---
@@ -131,7 +146,7 @@ public class ServerStatusPanel extends JPanel {
         };
         topTablesTable = new JTable(topTablesModel);
         setupTableStyle(topTablesTable);
-        detailsTabbedPane.addTab("Tablo Boyutları & Depolama", new JScrollPane(topTablesTable));
+        detailsTabbedPane.addTab("Tablo Boyutları", new JScrollPane(topTablesTable));
 
         // --- Sub-Tab 3: Audit / Export History ---
         String[] historyCols = {"Zaman", "Kullanıcı", "İşlem", "Detay", "Süre", "Durum"};
@@ -142,7 +157,6 @@ public class ServerStatusPanel extends JPanel {
         historyTable = new JTable(historyTableModel);
         setupTableStyle(historyTable);
 
-        // Status column color renderer (Green for SUCCESS, Red for ERROR)
         historyTable.getColumnModel().getColumn(5).setCellRenderer(new DefaultTableCellRenderer() {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
@@ -171,11 +185,50 @@ public class ServerStatusPanel extends JPanel {
         JPanel historyFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
         historyFooter.add(clearHistoryBtn);
         historyTabPanel.add(historyFooter, BorderLayout.SOUTH);
+        detailsTabbedPane.addTab("İşlem Geçmişi", historyTabPanel);
 
-        detailsTabbedPane.addTab("İşlem & Düzenleme Geçmişi", historyTabPanel);
+        // --- Sub-Tab 4: Direct System Diagnostics ---
+        String[] diagCols = {"Seviye", "Zaman", "Başlık", "Kaynak"};
+        diagnosticsTableModel = new DefaultTableModel(diagCols, 0) {
+            @Override
+            public boolean isCellEditable(int row, int column) { return false; }
+        };
+        diagnosticsTable = new JTable(diagnosticsTableModel);
+        setupTableStyle(diagnosticsTable);
+
+        diagnosticsTable.getColumnModel().getColumn(0).setCellRenderer(new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                JLabel c = (JLabel) super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                String val = String.valueOf(value);
+                if ("KRİTİK HATA".equalsIgnoreCase(val)) {
+                    c.setForeground(new Color(220, 38, 38));
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                } else if ("UYARI".equalsIgnoreCase(val)) {
+                    c.setForeground(new Color(217, 119, 6));
+                    c.setFont(c.getFont().deriveFont(Font.BOLD));
+                }
+                return c;
+            }
+        });
+
+        JPanel diagTabPanel = new JPanel(new BorderLayout(0, 4));
+        diagTabPanel.add(new JScrollPane(diagnosticsTable), BorderLayout.CENTER);
+
+        JPanel diagFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        JButton openModalBtn = new JButton("Detaylı Teşhis Raporunu Aç");
+        openModalBtn.setFont(openModalBtn.getFont().deriveFont(Font.BOLD, 11f));
+        openModalBtn.addActionListener(e -> openDiagnosticsDialog());
+        diagFooter.add(openModalBtn);
+        diagTabPanel.add(diagFooter, BorderLayout.SOUTH);
+
+        detailsTabbedPane.addTab("Uyarı & Hatalar (0)", diagTabPanel);
 
         centerContainer.add(detailsTabbedPane);
         add(centerContainer, BorderLayout.CENTER);
+
+        // Listen for diagnostics updates
+        diagnosticsManager.addListener(this::updateDiagnosticsUi);
 
         // Timer for auto-refresh
         autoRefreshTimer = new Timer(5000, e -> {
@@ -185,6 +238,7 @@ public class ServerStatusPanel extends JPanel {
         });
         autoRefreshTimer.start();
         loadAuditHistory();
+        updateDiagnosticsUi();
     }
 
     private void setupTableStyle(JTable table) {
@@ -193,11 +247,11 @@ public class ServerStatusPanel extends JPanel {
         table.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
     }
 
-    private JPanel createKpiCard(String title, JLabel mainLabel, JLabel subLabel) {
+    private JPanel createKpiCard(String title, JLabel mainLabel, JLabel subLabel, Runnable onClick) {
         JPanel card = new JPanel(new BorderLayout(0, 4));
         card.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
-                BorderFactory.createEmptyBorder(8, 12, 8, 12)
+                BorderFactory.createEmptyBorder(8, 10, 8, 10)
         ));
         card.setBackground(Color.WHITE);
 
@@ -206,7 +260,7 @@ public class ServerStatusPanel extends JPanel {
         titleLbl.setForeground(new Color(100, 105, 115));
         card.add(titleLbl, BorderLayout.NORTH);
 
-        mainLabel.setFont(mainLabel.getFont().deriveFont(Font.BOLD, 18f));
+        mainLabel.setFont(mainLabel.getFont().deriveFont(Font.BOLD, 16f));
         mainLabel.setForeground(new Color(25, 30, 40));
         card.add(mainLabel, BorderLayout.CENTER);
 
@@ -214,7 +268,66 @@ public class ServerStatusPanel extends JPanel {
         subLabel.setForeground(new Color(120, 125, 135));
         card.add(subLabel, BorderLayout.SOUTH);
 
+        if (onClick != null) {
+            card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            card.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    onClick.run();
+                }
+
+                @Override
+                public void mouseEntered(MouseEvent e) {
+                    card.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(59, 130, 246), 1, true),
+                            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                    ));
+                }
+
+                @Override
+                public void mouseExited(MouseEvent e) {
+                    card.setBorder(BorderFactory.createCompoundBorder(
+                            BorderFactory.createLineBorder(new Color(210, 215, 225), 1, true),
+                            BorderFactory.createEmptyBorder(8, 10, 8, 10)
+                    ));
+                }
+            });
+        }
+
         return card;
+    }
+
+    private void openDiagnosticsDialog() {
+        Window ancestor = SwingUtilities.getWindowAncestor(this);
+        Frame ownerFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
+        new DiagnosticsDialog(ownerFrame, diagnosticsManager, isDark).setVisible(true);
+        updateDiagnosticsUi();
+    }
+
+    public void updateDiagnosticsUi() {
+        int errs = diagnosticsManager.getErrorCount();
+        int warns = diagnosticsManager.getWarningCount();
+
+        diagnosticsValueLabel.setText(errs + " Hata | " + warns + " Uyarı");
+        if (errs > 0) {
+            diagnosticsValueLabel.setForeground(new Color(220, 38, 38));
+        } else if (warns > 0) {
+            diagnosticsValueLabel.setForeground(new Color(217, 119, 6));
+        } else {
+            diagnosticsValueLabel.setForeground(new Color(22, 163, 74));
+        }
+
+        detailsTabbedPane.setTitleAt(3, "Uyarı & Hatalar (" + (errs + warns) + ")");
+
+        diagnosticsTableModel.setRowCount(0);
+        for (SystemDiagnosticsManager.DiagnosticIssue issue : diagnosticsManager.getIssues()) {
+            diagnosticsTableModel.addRow(new Object[]{
+                    issue.level == SystemDiagnosticsManager.Level.ERROR ? "KRİTİK HATA" : "UYARI",
+                    issue.timestamp,
+                    issue.title,
+                    issue.source
+            });
+        }
     }
 
     public void loadAuditHistory() {
@@ -290,20 +403,32 @@ public class ServerStatusPanel extends JPanel {
                 activityTableModel.addRow(new Object[]{1024, "api_gateway", "10.0.0.5", "active", "INSERT INTO orders (product_id, amount) VALUES (42, 3)"});
                 activityTableModel.addRow(new Object[]{1028, "api_gateway", "10.0.0.6", "active", "UPDATE products SET stock = stock - 1 WHERE id = 42"});
                 activityTableModel.addRow(new Object[]{1031, "postgres", "127.0.0.1", "active", "SELECT pg_stat_activity.pid, query FROM pg_stat_activity"});
-                activityTableModel.addRow(new Object[]{1035, "analytics", "10.0.0.99", "active", "SELECT category, sum(price) FROM products GROUP BY category"});
                 break;
             case 2:
                 activeConns = 76; commits = 12450; rollbacks = 240; blksHit = 280000; blksRead = 14500; dbSize = "52.8 MB";
                 activityTableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
                 activityTableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
                 activityTableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
-                activityTableModel.addRow(new Object[]{1065, "etl_worker", "10.0.2.14", "active", "COPY products_archive TO STDOUT WITH CSV"});
+                if (diagnosticsManager.getWarningCount() == 0) {
+                    diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.WARN,
+                            "'customers_archive' tablosunda Primary Key eksik",
+                            "DDL Scripter Motoru",
+                            "Tablo taranırken birincil anahtar kısıtlaması bulunamadı. Replikasyon ve performans sorunlarına yol açabilir.",
+                            "ALTER TABLE public.customers_archive ADD PRIMARY KEY (id);");
+                }
                 break;
             default:
                 activeConns = 94; commits = 28400; rollbacks = 1250; blksHit = 510000; blksRead = 48000; dbSize = "68.4 MB";
                 activityTableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
                 activityTableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
                 activityTableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
+                if (diagnosticsManager.getErrorCount() == 0) {
+                    diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
+                            "Bağlantı Havuzu Kritik Doluluk Seviyesinde (%94)",
+                            "PostgreSQL Bağlantı Havuzu",
+                            "Aktif bağlantı sayısı 94/100 limitine yaklaştı. Yeni gelen istemci bağlantıları reddedilebilir veya kilitlenebilir.",
+                            "max_connections parametresini yükseltin veya PgBouncer benzeri bir connection pooler devreye alın.");
+                }
                 break;
         }
 
@@ -327,7 +452,9 @@ public class ServerStatusPanel extends JPanel {
         if (settings == null) return;
 
         loadAuditHistory();
+        updateDiagnosticsUi();
         refreshBtn.setEnabled(false);
+
         new SwingWorker<Void, Void>() {
             private String serverVersion = "--";
             private int activeConns = 0;
@@ -339,6 +466,7 @@ public class ServerStatusPanel extends JPanel {
             private long blksHit = 0;
             private long blksRead = 0;
             private boolean isOnline = false;
+            private String connError = null;
             private final java.util.List<Object[]> sessionRows = new java.util.ArrayList<>();
             private final java.util.List<Object[]> tableRows = new java.util.ArrayList<>();
 
@@ -430,6 +558,7 @@ public class ServerStatusPanel extends JPanel {
 
                 } catch (Exception ex) {
                     isOnline = false;
+                    connError = ex.getMessage();
                 }
                 return null;
             }
@@ -465,6 +594,15 @@ public class ServerStatusPanel extends JPanel {
                     for (Object[] row : tableRows) {
                         topTablesModel.addRow(row);
                     }
+
+                    // Check for potential warnings
+                    if (pct >= 85) {
+                        diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.WARN,
+                                "Yüksek Bağlantı Havuzu Kullanımı (%" + pct + ")",
+                                "PostgreSQL Havuzu",
+                                "Bağlantı sayısı " + activeConns + "/" + maxConns + " seviyesine ulaştı.",
+                                "Bağlantı limitini kontrol edin.");
+                    }
                 } else {
                     statusValueLabel.setText("Bağlantı Yok");
                     statusValueLabel.setForeground(new Color(220, 38, 38));
@@ -474,7 +612,16 @@ public class ServerStatusPanel extends JPanel {
                     cacheHitValueLabel.setText("--");
                     activityTableModel.setRowCount(0);
                     topTablesModel.setRowCount(0);
+
+                    if (connError != null) {
+                        diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
+                                "Veritabanı Sunucusuna Bağlanılamadı",
+                                "JDBC Sürücüsü",
+                                "Sunucu adresi veya kimlik bilgileri doğrulanamadı:\n" + connError,
+                                "PostgreSQL servisinin çalıştığından ve şifrenin doğruluğundan emin olun.");
+                    }
                 }
+                updateDiagnosticsUi();
             }
         }.execute();
     }
@@ -493,6 +640,9 @@ public class ServerStatusPanel extends JPanel {
 
         historyTable.setBackground(tableBg);
         historyTable.setForeground(tableFg);
+
+        diagnosticsTable.setBackground(tableBg);
+        diagnosticsTable.setForeground(tableFg);
 
         lastUpdateLabel.setForeground(isDark ? new Color(160, 165, 175) : new Color(100, 105, 115));
     }
