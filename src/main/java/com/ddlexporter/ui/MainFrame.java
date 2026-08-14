@@ -149,21 +149,22 @@ public class MainFrame extends JFrame {
         profileLabel.setFont(profileLabel.getFont().deriveFont(Font.BOLD, 12f));
         rightControls.add(profileLabel);
 
-        profileComboBox.setPreferredSize(new Dimension(220, 30));
+        profileComboBox.setPreferredSize(new Dimension(200, 30));
         profileComboBox.setFont(profileComboBox.getFont().deriveFont(Font.PLAIN, 12f));
         profileComboBox.addActionListener(e -> onProfileSelected());
         rightControls.add(profileComboBox);
 
-        JButton newProfileBtn = new JButton("Yeni Profil");
+        JButton newProfileBtn = new JButton("+ Yeni");
         newProfileBtn.setFont(newProfileBtn.getFont().deriveFont(Font.BOLD, 12f));
+        newProfileBtn.setToolTipText("Yeni profil oluştur");
         newProfileBtn.addActionListener(e -> createNewProfile());
         rightControls.add(newProfileBtn);
 
-        JButton delProfileBtn = new JButton("Sil");
-        delProfileBtn.setFont(delProfileBtn.getFont().deriveFont(Font.PLAIN, 12f));
-        delProfileBtn.setToolTipText("Seçili profili sil");
-        delProfileBtn.addActionListener(e -> deleteSelectedProfile());
-        rightControls.add(delProfileBtn);
+        JButton profileMenuBtn = new JButton("Yönet ▾");
+        profileMenuBtn.setFont(profileMenuBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        profileMenuBtn.setToolTipText("Profil yönetim seçenekleri");
+        profileMenuBtn.addActionListener(e -> showProfileMenu(profileMenuBtn));
+        rightControls.add(profileMenuBtn);
 
         // Theme Toggle Button
         themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
@@ -334,16 +335,63 @@ public class MainFrame extends JFrame {
         }
     }
 
+    private void showProfileMenu(Component invoker) {
+        String selected = (String) profileComboBox.getSelectedItem();
+        JPopupMenu menu = new JPopupMenu();
+
+        JMenuItem itemNew = new JMenuItem("Yeni Profil Oluştur...");
+        itemNew.addActionListener(e -> createNewProfile());
+        menu.add(itemNew);
+
+        JMenuItem itemDuplicate = new JMenuItem("Mevcut Profili Çoğalt...");
+        itemDuplicate.addActionListener(e -> {
+            if (selected != null) {
+                String copyName = JOptionPane.showInputDialog(this, "'" + selected + "' profilinin kopyası için yeni ad girin:", selected + "_Kopya");
+                if (copyName != null && !copyName.isBlank()) {
+                    PostgresqlConfigurationSettings settings = profileManager.getProfile(selected);
+                    if (settings != null) {
+                        profileManager.addOrUpdateProfile(copyName.trim(), settings);
+                        refreshProfileDropdown();
+                        profileComboBox.setSelectedItem(copyName.trim());
+                    }
+                }
+            }
+        });
+        menu.add(itemDuplicate);
+
+        menu.addSeparator();
+
+        JMenuItem itemDelete = new JMenuItem("Seçili Profili Sil ('" + selected + "')...");
+        itemDelete.setForeground(new Color(220, 53, 69)); // Red safety accent
+        itemDelete.addActionListener(e -> deleteSelectedProfile());
+        menu.add(itemDelete);
+
+        menu.show(invoker, 0, invoker.getHeight());
+    }
+
     private void deleteSelectedProfile() {
         String selected = (String) profileComboBox.getSelectedItem();
-        if (selected != null) {
-            int confirm = JOptionPane.showConfirmDialog(this,
-                    "'" + selected + "' profilini silmek istediğinize emin misiniz?", "Profili Sil",
-                    JOptionPane.YES_NO_OPTION);
-            if (confirm == JOptionPane.YES_OPTION) {
-                profileManager.deleteProfile(selected);
-                refreshProfileDropdown();
-            }
+        if (selected == null) return;
+
+        if ("Default".equalsIgnoreCase(selected)) {
+            JOptionPane.showMessageDialog(this,
+                    "Varsayılan 'Default' profili sistem gereksinimidir ve silinemez.",
+                    "İşlem Engellendi", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        int confirm = JOptionPane.showConfirmDialog(this,
+                "'" + selected + "' profilini kalıcı olarak silmek istediğinize emin misiniz?\nBu işlem geri alınamaz.",
+                "Profili Silme Onayı",
+                JOptionPane.YES_NO_OPTION,
+                JOptionPane.WARNING_MESSAGE);
+
+        if (confirm == JOptionPane.YES_OPTION) {
+            profileManager.deleteProfile(selected);
+            refreshProfileDropdown();
+            JOptionPane.showMessageDialog(this,
+                    "'" + selected + "' profili başarıyla silindi.",
+                    "Silindi", JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
