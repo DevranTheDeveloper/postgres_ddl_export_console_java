@@ -32,7 +32,7 @@ public class SchemaExplorerPanel extends JPanel {
     private String originalFileContent = "";
     private boolean isEditMode = false;
     private boolean isModified = false;
-    private final JButton editToggleBtn = new JButton("Düzenle 🔒");
+    private final JButton editToggleBtn = new JButton("Düzenle (Kilitli)");
     private final JButton saveBtn = new JButton("Kaydet");
     private final JButton discardBtn = new JButton("Geri Al");
     private Runnable onFileSavedListener = null;
@@ -58,7 +58,7 @@ public class SchemaExplorerPanel extends JPanel {
         searchPanel.add(searchField, BorderLayout.CENTER);
         topToolbar.add(searchPanel, BorderLayout.CENTER);
 
-        // Action Buttons Toolbar: [Düzenle 🔒] [Kaydet] [Geri Al] [SQL Kopyala]
+        // Action Buttons Toolbar: [Düzenle] [Kaydet] [Geri Al] [SQL Kopyala]
         JPanel actionsPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
         editToggleBtn.setFont(editToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
@@ -196,11 +196,11 @@ public class SchemaExplorerPanel extends JPanel {
         sqlTextArea.setEditable(isEditMode);
 
         if (isEditMode) {
-            editToggleBtn.setText("Kilitle 🔓");
+            editToggleBtn.setText("Düzenleme Modu (Açık)");
             editToggleBtn.setForeground(new Color(22, 163, 74));
             updateFileLabelStatus();
         } else {
-            editToggleBtn.setText("Düzenle 🔒");
+            editToggleBtn.setText("Düzenle (Kilitli)");
             editToggleBtn.setForeground(null);
             updateFileLabelStatus();
         }
@@ -227,14 +227,14 @@ public class SchemaExplorerPanel extends JPanel {
 
         String statusSuffix;
         if (isModified) {
-            statusSuffix = " ● [Değiştirildi - Kaydedilmedi]";
+            statusSuffix = " [Değiştirildi - Kaydedilmedi]";
         } else if (isEditMode) {
-            statusSuffix = " [Düzenleme Modu Aktif 🔓]";
+            statusSuffix = " [Düzenleme Modu Aktif]";
         } else {
-            statusSuffix = " [Kilitli / Salt Okunur 🔒]";
+            statusSuffix = " [Kilitli / Salt Okunur]";
         }
 
-        currentFileLabel.setText(" 📄 " + currentSelectedFile.getAbsolutePath() + statusSuffix);
+        currentFileLabel.setText(currentSelectedFile.getAbsolutePath() + statusSuffix);
         if (isModified) {
             currentFileLabel.setForeground(new Color(217, 119, 6)); // Amber
         } else {
@@ -251,7 +251,7 @@ public class SchemaExplorerPanel extends JPanel {
         lineNumbersArea.setText(lineNums.toString());
 
         statsLabel.setText(String.format(" Satır: %d | Karakter: %d | Durum: %s | UTF-8 ",
-                lines.length, content.length(), isEditMode ? "Düzenlenebilir 🔓" : "Kilitli 🔒"));
+                lines.length, content.length(), isEditMode ? "Düzenlenebilir" : "Kilitli"));
     }
 
     public void saveCurrentFile() {
@@ -398,7 +398,7 @@ public class SchemaExplorerPanel extends JPanel {
             sqlTextArea.setCaretPosition(0);
             sqlTextArea.setEditable(false);
 
-            editToggleBtn.setText("Düzenle 🔒");
+            editToggleBtn.setText("Düzenle (Kilitli)");
             editToggleBtn.setForeground(null);
             saveBtn.setEnabled(false);
             discardBtn.setEnabled(false);

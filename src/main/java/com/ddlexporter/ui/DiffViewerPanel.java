@@ -73,13 +73,13 @@ public class DiffViewerPanel extends JPanel {
 
         JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
-        JButton testDiffBtn = new JButton("🧪 Test Farkı Oluştur");
+        JButton testDiffBtn = new JButton("Test Farkı Oluştur");
         testDiffBtn.setFont(testDiffBtn.getFont().deriveFont(Font.PLAIN, 11f));
         testDiffBtn.setToolTipText("Yeni kolon ve indeks farkı simüle ederek Migration motorunu test edin");
         testDiffBtn.addActionListener(e -> simulateDiffForTesting());
         rightControls.add(testDiffBtn);
 
-        JButton generateMigrationBtn = new JButton("⚡ Migration (ALTER) Üret");
+        JButton generateMigrationBtn = new JButton("Migration (ALTER) Üret");
         generateMigrationBtn.setFont(generateMigrationBtn.getFont().deriveFont(Font.BOLD, 12f));
         generateMigrationBtn.setForeground(new Color(22, 163, 74));
         generateMigrationBtn.addActionListener(e -> generateMigration());
@@ -112,15 +112,15 @@ public class DiffViewerPanel extends JPanel {
 
         // Bottom Generated Migration Script Panel
         JPanel migrationPanel = new JPanel(new BorderLayout(0, 4));
-        migrationPanel.setBorder(BorderFactory.createTitledBorder("⚡ Otomatik Üretilen PostgreSQL Migration (ALTER) Scripti"));
+        migrationPanel.setBorder(BorderFactory.createTitledBorder("Otomatik Üretilen PostgreSQL Migration (ALTER) Scripti"));
 
         JPanel migrationToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-        JButton copyMigrationBtn = new JButton("📋 Migration SQL Kopyala");
+        JButton copyMigrationBtn = new JButton("Migration SQL Kopyala");
         copyMigrationBtn.setFont(copyMigrationBtn.getFont().deriveFont(Font.BOLD, 11f));
         copyMigrationBtn.addActionListener(e -> copySqlToClipboard(migrationTextArea.getText(), "Migration scripti panoya kopyalandı!"));
         migrationToolbar.add(copyMigrationBtn);
 
-        JButton saveMigrationBtn = new JButton("💾 .sql Olarak Kaydet");
+        JButton saveMigrationBtn = new JButton(".sql Olarak Kaydet");
         saveMigrationBtn.setFont(saveMigrationBtn.getFont().deriveFont(Font.PLAIN, 11f));
         saveMigrationBtn.addActionListener(e -> exportSqlToFile(migrationTextArea.getText(), "V1__migration_auto_generated.sql"));
         migrationToolbar.add(saveMigrationBtn);
@@ -143,7 +143,7 @@ public class DiffViewerPanel extends JPanel {
         leftTextArea.getDocument().addDocumentListener(changeListener);
         rightTextArea.getDocument().addDocumentListener(changeListener);
 
-        rootTabbedPane.addTab("📄 Dosya & DDL Sürüm Farkı", fileDiffPanel);
+        rootTabbedPane.addTab("Dosya & DDL Sürüm Farkı", fileDiffPanel);
 
         // =========================================================================
         // MODE 2: Multi-Environment Comparison (Staging vs Production)
@@ -159,18 +159,18 @@ public class DiffViewerPanel extends JPanel {
         sourceProfileSelector.setPreferredSize(new Dimension(170, 26));
         profileSelectors.add(sourceProfileSelector);
 
-        profileSelectors.add(new JLabel(" ➔  Hedef Ortam (Canlı / Production):"));
+        profileSelectors.add(new JLabel(" -> Hedef Ortam (Canlı / Production):"));
         targetProfileSelector.setPreferredSize(new Dimension(170, 26));
         profileSelectors.add(targetProfileSelector);
         envTopBar.add(profileSelectors, BorderLayout.WEST);
 
         JPanel envActions = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 4));
-        JButton simEnvBtn = new JButton("🧪 Test Ortam Simülasyonu");
+        JButton simEnvBtn = new JButton("Test Ortam Simülasyonu");
         simEnvBtn.setFont(simEnvBtn.getFont().deriveFont(Font.PLAIN, 11f));
         simEnvBtn.addActionListener(e -> runSimulatedEnvDiff());
         envActions.add(simEnvBtn);
 
-        JButton runEnvDiffBtn = new JButton("🚀 Ortamları Karşılaştır");
+        JButton runEnvDiffBtn = new JButton("Ortamları Karşılaştır");
         runEnvDiffBtn.setFont(runEnvDiffBtn.getFont().deriveFont(Font.BOLD, 12f));
         runEnvDiffBtn.setForeground(new Color(22, 163, 74));
         runEnvDiffBtn.addActionListener(e -> runLiveEnvironmentDiff());
@@ -226,15 +226,15 @@ public class DiffViewerPanel extends JPanel {
         envTablePanel.add(new JScrollPane(envDiffTable), BorderLayout.CENTER);
 
         JPanel envPatchPanel = new JPanel(new BorderLayout(0, 4));
-        envPatchPanel.setBorder(BorderFactory.createTitledBorder("⚡ Hedef Ortama Dağıtım (Deploy Patch) Scripti"));
+        envPatchPanel.setBorder(BorderFactory.createTitledBorder("Hedef Ortama Dağıtım (Deploy Patch) Scripti"));
 
         JPanel patchToolbar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 2));
-        JButton copyPatchBtn = new JButton("📋 Yamayı Kopyala");
+        JButton copyPatchBtn = new JButton("Yamayı Kopyala");
         copyPatchBtn.setFont(copyPatchBtn.getFont().deriveFont(Font.BOLD, 11f));
         copyPatchBtn.addActionListener(e -> copySqlToClipboard(envPatchTextArea.getText(), "Dağıtım yaması panoya kopyalandı!"));
         patchToolbar.add(copyPatchBtn);
 
-        JButton savePatchBtn = new JButton("💾 .sql Kaydet");
+        JButton savePatchBtn = new JButton(".sql Kaydet");
         savePatchBtn.setFont(savePatchBtn.getFont().deriveFont(Font.PLAIN, 11f));
         savePatchBtn.addActionListener(e -> exportSqlToFile(envPatchTextArea.getText(), "deploy_patch_to_prod.sql"));
         patchToolbar.add(savePatchBtn);
@@ -248,7 +248,7 @@ public class DiffViewerPanel extends JPanel {
         envSplit.setResizeWeight(0.5);
         envDiffPanel.add(envSplit, BorderLayout.CENTER);
 
-        rootTabbedPane.addTab("🌐 Canlı Ortam Karşılaştırma (Staging vs Prod)", envDiffPanel);
+        rootTabbedPane.addTab("Canlı Ortam Karşılaştırma (Staging vs Prod)", envDiffPanel);
         add(rootTabbedPane, BorderLayout.CENTER);
 
         refreshProfiles();
@@ -496,11 +496,11 @@ public class DiffViewerPanel extends JPanel {
                     String content = Files.readString(sqlFile.toPath());
                     rightTextArea.setText(content);
                     rightTextArea.setCaretPosition(0);
-                    rightHeaderLabel.setText("📄 Güncel Şema: " + sqlFile.getName());
+                    rightHeaderLabel.setText("Güncel Şema: " + sqlFile.getName());
 
                     leftTextArea.setText(content);
                     leftTextArea.setCaretPosition(0);
-                    leftHeaderLabel.setText("📄 Referans / Önceki Şema: " + sqlFile.getName());
+                    leftHeaderLabel.setText("Referans / Önceki Şema: " + sqlFile.getName());
 
                     generateMigration();
                 } catch (Exception e) {

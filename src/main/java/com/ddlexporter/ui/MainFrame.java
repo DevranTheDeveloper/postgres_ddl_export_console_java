@@ -357,10 +357,10 @@ public class MainFrame extends JFrame {
     private void updateScheduleButtonUi() {
         ScheduledBackupManager.ScheduleConfig cfg = scheduleManager.getConfig();
         if (cfg.enabled) {
-            scheduleStatusBtn.setText("⏱️ Oto-Yedek: " + cfg.intervalMinutes + " dk 🟢");
+            scheduleStatusBtn.setText("Oto-Yedek: " + cfg.intervalMinutes + " dk (Aktif)");
             scheduleStatusBtn.setForeground(new Color(22, 163, 74));
         } else {
-            scheduleStatusBtn.setText("⏱️ Oto-Yedek: Kapalı ⚪");
+            scheduleStatusBtn.setText("Oto-Yedek: Kapalı");
             scheduleStatusBtn.setForeground(null);
         }
     }

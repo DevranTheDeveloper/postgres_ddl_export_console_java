@@ -54,7 +54,7 @@ public class ErDiagramPanel extends JPanel {
         leftControls.add(new JLabel("Tablo Ara:"));
         leftControls.add(searchField);
 
-        JLabel tipLabel = new JLabel("(💡 Tabloya çift tıklayarak SQL koduna gidebilirsiniz)");
+        JLabel tipLabel = new JLabel("(Tabloya çift tıklayarak SQL koduna gidebilirsiniz)");
         tipLabel.setFont(tipLabel.getFont().deriveFont(Font.ITALIC, 11f));
         tipLabel.setForeground(new Color(110, 120, 135));
         leftControls.add(tipLabel);
@@ -63,12 +63,12 @@ public class ErDiagramPanel extends JPanel {
 
         JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
 
-        JButton zoomInBtn = new JButton("➕");
+        JButton zoomInBtn = new JButton("+");
         zoomInBtn.setToolTipText("Yakınlaştır");
         zoomInBtn.addActionListener(e -> canvas.zoom(1.15));
         rightControls.add(zoomInBtn);
 
-        JButton zoomOutBtn = new JButton("➖");
+        JButton zoomOutBtn = new JButton("-");
         zoomOutBtn.setToolTipText("Uzaklaştır");
         zoomOutBtn.addActionListener(e -> canvas.zoom(0.85));
         rightControls.add(zoomOutBtn);
@@ -88,12 +88,12 @@ public class ErDiagramPanel extends JPanel {
         });
         rightControls.add(autoArrangeBtn);
 
-        JButton copyMermaidBtn = new JButton("📋 Mermaid Kopyala");
+        JButton copyMermaidBtn = new JButton("Mermaid Kopyala");
         copyMermaidBtn.setFont(copyMermaidBtn.getFont().deriveFont(Font.PLAIN, 11f));
         copyMermaidBtn.addActionListener(e -> copyMermaidCode());
         rightControls.add(copyMermaidBtn);
 
-        JButton exportImgBtn = new JButton("📸 PNG Olarak Kaydet");
+        JButton exportImgBtn = new JButton("PNG Olarak Kaydet");
         exportImgBtn.setFont(exportImgBtn.getFont().deriveFont(Font.BOLD, 11f));
         exportImgBtn.setForeground(new Color(22, 163, 74));
         exportImgBtn.addActionListener(e -> exportAsImage());
@@ -260,14 +260,14 @@ public class ErDiagramPanel extends JPanel {
 
             JPopupMenu menu = new JPopupMenu();
 
-            JMenuItem openSqlItem = new JMenuItem("📄 SQL Gezgininde Aç / Düzenle (" + table.name + ".sql)");
+            JMenuItem openSqlItem = new JMenuItem("SQL Gezgininde Aç / Düzenle (" + table.name + ".sql)");
             openSqlItem.setFont(openSqlItem.getFont().deriveFont(Font.BOLD));
             openSqlItem.addActionListener(ev -> {
                 if (tableNavigateListener != null) tableNavigateListener.accept(table.name);
             });
             menu.add(openSqlItem);
 
-            JMenuItem copyDdlItem = new JMenuItem("📋 Tablo DDL Scriptini Kopyala");
+            JMenuItem copyDdlItem = new JMenuItem("Tablo DDL Scriptini Kopyala");
             copyDdlItem.addActionListener(ev -> {
                 String ddl = ErDiagramEngine.generateTableDdl(table);
                 Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(ddl), null);
@@ -279,13 +279,13 @@ public class ErDiagramPanel extends JPanel {
 
             menu.addSeparator();
 
-            JMenuItem focusItem = new JMenuItem("🔍 Sadece Bu Tabloyu Vurgula");
+            JMenuItem focusItem = new JMenuItem("Sadece Bu Tabloyu Vurgula");
             focusItem.addActionListener(ev -> {
                 searchField.setText(table.name);
             });
             menu.add(focusItem);
 
-            JMenuItem diffItem = new JMenuItem("🌐 Şema Farkında (Diff) Karşılaştır");
+            JMenuItem diffItem = new JMenuItem("Şema Farkında (Diff) Karşılaştır");
             diffItem.addActionListener(ev -> {
                 if (diffNavigateListener != null) diffNavigateListener.accept(table.name);
             });
@@ -455,18 +455,21 @@ public class ErDiagramPanel extends JPanel {
             g2.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
 
             for (ErDiagramEngine.ErColumn col : table.columns) {
-                // Key Badges: PK 🔑 / FK 🔗
+                // Key Badges: PK / FK
                 if (col.isPk) {
+                    g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
                     g2.setColor(new Color(234, 179, 8));
-                    g2.drawString("🔑", table.x + 8, rowY);
+                    g2.drawString("PK", table.x + 8, rowY);
                 } else if (col.isFk) {
+                    g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 10));
                     g2.setColor(new Color(59, 130, 246));
-                    g2.drawString("🔗", table.x + 8, rowY);
+                    g2.drawString("FK", table.x + 8, rowY);
                 }
 
+                g2.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 11));
                 // Column Name
                 g2.setColor(isDark ? new Color(220, 225, 235) : new Color(51, 65, 85));
-                g2.drawString(col.name, table.x + 26, rowY);
+                g2.drawString(col.name, table.x + 28, rowY);
 
                 // Column Type (Right Aligned)
                 g2.setColor(isDark ? new Color(130, 140, 160) : new Color(140, 150, 165));

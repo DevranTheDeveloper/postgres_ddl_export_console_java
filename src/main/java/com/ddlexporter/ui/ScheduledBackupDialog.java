@@ -41,7 +41,7 @@ public class ScheduledBackupDialog extends JDialog {
 
         // 1. Header
         JPanel header = new JPanel(new BorderLayout(0, 4));
-        JLabel title = new JLabel("⏱️ Arka Plan DDL Yedekleme Zamanlayıcısı");
+        JLabel title = new JLabel("Arka Plan DDL Yedekleme Zamanlayıcısı");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
         header.add(title, BorderLayout.NORTH);
 
@@ -106,7 +106,7 @@ public class ScheduledBackupDialog extends JDialog {
         // 3. Footer Buttons
         JPanel footer = new JPanel(new BorderLayout());
 
-        JButton runNowBtn = new JButton("⚡ Şimdi Çalıştır (Manuel)");
+        JButton runNowBtn = new JButton("Şimdi Çalıştır (Manuel)");
         runNowBtn.setFont(runNowBtn.getFont().deriveFont(Font.BOLD, 11f));
         runNowBtn.addActionListener(e -> {
             scheduleManager.runNow();
@@ -159,8 +159,8 @@ public class ScheduledBackupDialog extends JDialog {
 
         autoGitCheckBox.setSelected(cfg.autoGitCommit);
 
-        lastRunLabel.setText("📅 Son Çalışma Zamanı : " + cfg.lastRunTime);
-        statusLabel.setText("📊 Son Durum          : " + cfg.lastStatus);
+        lastRunLabel.setText("Son Çalışma Zamanı : " + cfg.lastRunTime);
+        statusLabel.setText("Son Durum          : " + cfg.lastStatus);
         if (cfg.lastStatus.startsWith("BAŞARILI")) {
             statusLabel.setForeground(new Color(22, 163, 74));
         } else if (cfg.lastStatus.startsWith("HATA")) {
@@ -169,7 +169,7 @@ public class ScheduledBackupDialog extends JDialog {
             statusLabel.setForeground(new Color(100, 110, 125));
         }
 
-        totalRunsLabel.setText("🔁 Toplam Yedekleme  : " + cfg.totalRuns + " adet");
+        totalRunsLabel.setText("Toplam Yedekleme  : " + cfg.totalRuns + " adet");
 
         updateFormState();
     }

@@ -108,7 +108,7 @@ public class GitSyncPanel extends JPanel {
             @Override
             protected void done() {
                 syncBtn.setEnabled(true);
-                syncBtn.setText("🚀 Değişiklikleri Commit Et & GitHub'a Push'la");
+                syncBtn.setText("Değişiklikleri Commit Et & GitHub'a Push'la");
                 try {
                     String result = get();
                     statusArea.setText(result);
