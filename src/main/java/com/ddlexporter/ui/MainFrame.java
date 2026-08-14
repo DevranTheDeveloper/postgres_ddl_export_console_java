@@ -19,7 +19,13 @@ public class MainFrame extends JFrame {
 
     public MainFrame() {
         super("🐘 PostgreSQL DDL Export Studio - v1.0.0");
+        
+        // macOS Native Entegrasyonu
+        System.setProperty("apple.laf.useScreenMenuBar", "true");
+        System.setProperty("apple.awt.application.name", "PostgreSQL DDL Studio");
+        
         initLookAndFeel();
+        initAppIcon();
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(1100, 720);
@@ -49,6 +55,36 @@ public class MainFrame extends JFrame {
 
         // Load existing settings if available
         loadInitialSettings();
+    }
+
+    private void initAppIcon() {
+        try {
+            int size = 128;
+            java.awt.image.BufferedImage icon = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2 = icon.createGraphics();
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            GradientPaint gp = new GradientPaint(0, 0, new Color(41, 128, 185), size, size, new Color(44, 62, 80));
+            g2.setPaint(gp);
+            g2.fillRoundRect(8, 8, size - 16, size - 16, 28, 28);
+
+            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 64));
+            FontMetrics fm = g2.getFontMetrics();
+            String emoji = "🐘";
+            int x = (size - fm.stringWidth(emoji)) / 2;
+            int y = (size - fm.getHeight()) / 2 + fm.getAscent() - 2;
+            g2.drawString(emoji, x, y);
+            g2.dispose();
+
+            setIconImage(icon);
+
+            if (Taskbar.isTaskbarSupported()) {
+                Taskbar taskbar = Taskbar.getTaskbar();
+                if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
+                    taskbar.setIconImage(icon);
+                }
+            }
+        } catch (Throwable ignored) {}
     }
 
     private void initLookAndFeel() {
