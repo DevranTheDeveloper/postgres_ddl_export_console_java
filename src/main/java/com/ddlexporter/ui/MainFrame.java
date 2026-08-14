@@ -481,6 +481,22 @@ public class MainFrame extends JFrame {
                 BorderFactory.createEmptyBorder(6, 6, 6, 6)
         ));
 
+        JMenuItem itemSave = new JMenuItem("Seçili Profili Kaydet / Güncelle ('" + selected + "')");
+        itemSave.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
+        itemSave.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
+        itemSave.setForeground(new Color(22, 163, 74));
+        itemSave.addActionListener(e -> {
+            if (selected != null) {
+                PostgresqlConfigurationSettings s = connectionPanel.getSettingsFromUi();
+                profileManager.addOrUpdateProfile(selected, s);
+                statusLabel.setText("Profil: " + selected + " güncellendi (" + s.getServerHost() + ":" + s.getPort() + "/" + s.getDatabaseName() + ")");
+                JOptionPane.showMessageDialog(this, "'" + selected + "' profil ayarları başarıyla kaydedildi!", "Kaydedildi", JOptionPane.INFORMATION_MESSAGE);
+            }
+        });
+        menu.add(itemSave);
+
+        menu.addSeparator();
+
         JMenuItem itemNew = new JMenuItem("Yeni Profil Oluştur...");
         itemNew.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         itemNew.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
