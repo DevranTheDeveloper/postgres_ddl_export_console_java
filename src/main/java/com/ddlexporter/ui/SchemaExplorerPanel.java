@@ -1,6 +1,8 @@
 package com.ddlexporter.ui;
 
 import javax.swing.*;
+import javax.swing.event.DocumentEvent;
+import javax.swing.event.DocumentListener;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeCellRenderer;
 import javax.swing.tree.DefaultTreeModel;
@@ -8,29 +10,46 @@ import java.awt.*;
 import java.awt.datatransfer.StringSelection;
 import java.io.File;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public class SchemaExplorerPanel extends JPanel {
     private final JTree tree;
     private final DefaultTreeModel treeModel;
     private final DefaultMutableTreeNode rootNode;
     private final JTextArea sqlTextArea;
+    private final JTextArea lineNumbersArea;
     private final JLabel currentFileLabel;
+    private final JLabel statsLabel;
+    private final JTextField searchField;
+    private final List<FileNode> allDiscoveredFiles = new ArrayList<>();
+    private File currentExportDir;
 
     public SchemaExplorerPanel() {
-        setLayout(new BorderLayout());
+        setLayout(new BorderLayout(5, 5));
 
-        // Header / Title
-        JPanel headerPanel = new JPanel(new BorderLayout(5, 5));
-        headerPanel.setBorder(BorderFactory.createEmptyBorder(8, 10, 8, 10));
-        JLabel titleLabel = new JLabel("📁 DDL Şema Gezgini & SQL Önizleme");
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 14f));
-        headerPanel.add(titleLabel, BorderLayout.WEST);
+        // Header / Search Toolbar
+        JPanel topToolbar = new JPanel(new BorderLayout(8, 0));
+        topToolbar.setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
-        JButton copyButton = new JButton("📋 SQL Kopyala");
-        copyButton.addActionListener(e -> copySqlToClipboard());
-        headerPanel.add(copyButton, BorderLayout.EAST);
-        add(headerPanel, BorderLayout.NORTH);
+        JPanel searchPanel = new JPanel(new BorderLayout(5, 0));
+        searchPanel.add(new JLabel("🔍"), BorderLayout.WEST);
+        searchField = new JTextField();
+        searchField.putClientProperty("JTextField.placeholderText", "Tablo, görünüm veya fonksiyon ara...");
+        searchField.getDocument().addDocumentListener(new DocumentListener() {
+            public void insertUpdate(DocumentEvent e) { filterTree(); }
+            public void removeUpdate(DocumentEvent e) { filterTree(); }
+            public void changedUpdate(DocumentEvent e) { filterTree(); }
+        });
+        searchPanel.add(searchField, BorderLayout.CENTER);
+        topToolbar.add(searchPanel, BorderLayout.CENTER);
+
+        JButton copyBtn = new JButton("📋 SQL Kopyala");
+        copyBtn.addActionListener(e -> copySqlToClipboard());
+        topToolbar.add(copyBtn, BorderLayout.EAST);
+
+        add(topToolbar, BorderLayout.NORTH);
 
         // Left: Tree View
         rootNode = new DefaultMutableTreeNode("Veritabanı Nesneleri");
@@ -38,8 +57,7 @@ public class SchemaExplorerPanel extends JPanel {
         tree = new JTree(treeModel);
         tree.setRootVisible(true);
         tree.setRowHeight(22);
-        
-        // Custom tree cell renderer with emoji icons
+
         DefaultTreeCellRenderer renderer = new DefaultTreeCellRenderer();
         renderer.setLeafIcon(UIManager.getIcon("FileView.fileIcon"));
         renderer.setClosedIcon(UIManager.getIcon("Tree.closedIcon"));
@@ -58,29 +76,47 @@ public class SchemaExplorerPanel extends JPanel {
         treeScrollPane.setPreferredSize(new Dimension(280, 400));
         treeScrollPane.setBorder(BorderFactory.createTitledBorder("Nesne Ağacı"));
 
-        // Right: SQL Text Editor
+        // Right: SQL Text Editor with Line Numbers
         JPanel sqlEditorPanel = new JPanel(new BorderLayout());
-        sqlEditorPanel.setBorder(BorderFactory.createTitledBorder("SQL Tanımı (DDL)"));
+        sqlEditorPanel.setBorder(BorderFactory.createTitledBorder("SQL Tanımı (DDL Script)"));
 
         currentFileLabel = new JLabel(" Henüz bir nesne seçilmedi");
         currentFileLabel.setFont(currentFileLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        currentFileLabel.setBorder(BorderFactory.createEmptyBorder(4, 6, 4, 6));
+        currentFileLabel.setBorder(BorderFactory.createEmptyBorder(3, 6, 3, 6));
         sqlEditorPanel.add(currentFileLabel, BorderLayout.NORTH);
 
         sqlTextArea = new JTextArea();
         sqlTextArea.setEditable(false);
         sqlTextArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
-        sqlTextArea.setBackground(new Color(30, 30, 30));
-        sqlTextArea.setForeground(new Color(220, 220, 220));
+        sqlTextArea.setBackground(new Color(25, 25, 25));
+        sqlTextArea.setForeground(new Color(225, 225, 225));
         sqlTextArea.setCaretColor(Color.WHITE);
-        sqlTextArea.setMargin(new Insets(8, 8, 8, 8));
+        sqlTextArea.setMargin(new Insets(6, 6, 6, 6));
 
-        JScrollPane sqlScrollPane = new JScrollPane(sqlTextArea);
+        lineNumbersArea = new JTextArea(" 1 ");
+        lineNumbersArea.setEditable(false);
+        lineNumbersArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 13));
+        lineNumbersArea.setBackground(new Color(35, 35, 35));
+        lineNumbersArea.setForeground(new Color(110, 110, 110));
+        lineNumbersArea.setMargin(new Insets(6, 4, 6, 4));
+
+        JPanel editorWithLines = new JPanel(new BorderLayout());
+        editorWithLines.add(lineNumbersArea, BorderLayout.WEST);
+        editorWithLines.add(sqlTextArea, BorderLayout.CENTER);
+
+        JScrollPane sqlScrollPane = new JScrollPane(editorWithLines);
         sqlEditorPanel.add(sqlScrollPane, BorderLayout.CENTER);
+
+        // Stats Footer Bar
+        statsLabel = new JLabel(" Satır: 0 | Karakter: 0 | UTF-8 ");
+        statsLabel.setFont(statsLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        statsLabel.setForeground(new Color(150, 150, 150));
+        statsLabel.setBorder(BorderFactory.createEmptyBorder(2, 6, 2, 6));
+        sqlEditorPanel.add(statsLabel, BorderLayout.SOUTH);
 
         // Split Pane
         JSplitPane splitPane = new JSplitPane(JSplitPane.HORIZONTAL_SPLIT, treeScrollPane, sqlEditorPanel);
-        splitPane.setDividerLocation(280);
+        splitPane.setDividerLocation(290);
         splitPane.setResizeWeight(0.3);
         add(splitPane, BorderLayout.CENTER);
     }
@@ -90,31 +126,67 @@ public class SchemaExplorerPanel extends JPanel {
         File dir = new File(baseDir);
         if (!dir.exists() || !dir.isDirectory()) return;
 
-        rootNode.removeAllChildren();
-        rootNode.setUserObject("📁 " + dir.getName());
+        this.currentExportDir = dir;
+        allDiscoveredFiles.clear();
 
         File[] dbDirs = dir.listFiles(File::isDirectory);
         if (dbDirs != null) {
-            Arrays.sort(dbDirs);
             for (File dbDir : dbDirs) {
-                DefaultMutableTreeNode dbNode = new DefaultMutableTreeNode("🗄️ " + dbDir.getName());
-                rootNode.add(dbNode);
-
                 File[] typeDirs = dbDir.listFiles(File::isDirectory);
                 if (typeDirs != null) {
-                    Arrays.sort(typeDirs);
                     for (File typeDir : typeDirs) {
-                        String icon = getFolderIcon(typeDir.getName());
-                        DefaultMutableTreeNode typeNode = new DefaultMutableTreeNode(icon + " " + typeDir.getName());
-                        dbNode.add(typeNode);
-
                         File[] sqlFiles = typeDir.listFiles((d, name) -> name.endsWith(".sql"));
                         if (sqlFiles != null) {
-                            Arrays.sort(sqlFiles);
                             for (File sqlFile : sqlFiles) {
-                                String cleanName = sqlFile.getName();
-                                typeNode.add(new DefaultMutableTreeNode(new FileNode(cleanName, sqlFile)));
+                                allDiscoveredFiles.add(new FileNode(dbDir.getName(), typeDir.getName(), sqlFile.getName(), sqlFile));
                             }
+                        }
+                    }
+                }
+            }
+        }
+
+        buildTree(searchField.getText().trim());
+    }
+
+    private void filterTree() {
+        buildTree(searchField.getText().trim());
+    }
+
+    private void buildTree(String filterText) {
+        rootNode.removeAllChildren();
+        rootNode.setUserObject("📁 Veritabanı Şeması (" + allDiscoveredFiles.size() + " Nesne)");
+
+        String lowerFilter = filterText.toLowerCase();
+
+        // Group by DB and Type
+        java.util.Set<String> databases = new java.util.TreeSet<>();
+        for (FileNode fn : allDiscoveredFiles) {
+            if (lowerFilter.isEmpty() || fn.fileName.toLowerCase().contains(lowerFilter) || fn.typeName.toLowerCase().contains(lowerFilter)) {
+                databases.add(fn.dbName);
+            }
+        }
+
+        for (String db : databases) {
+            DefaultMutableTreeNode dbNode = new DefaultMutableTreeNode("🗄️ " + db);
+            rootNode.add(dbNode);
+
+            java.util.Set<String> types = new java.util.TreeSet<>();
+            for (FileNode fn : allDiscoveredFiles) {
+                if (fn.dbName.equals(db) && (lowerFilter.isEmpty() || fn.fileName.toLowerCase().contains(lowerFilter) || fn.typeName.toLowerCase().contains(lowerFilter))) {
+                    types.add(fn.typeName);
+                }
+            }
+
+            for (String type : types) {
+                String icon = getFolderIcon(type);
+                DefaultMutableTreeNode typeNode = new DefaultMutableTreeNode(icon + " " + type);
+                dbNode.add(typeNode);
+
+                for (FileNode fn : allDiscoveredFiles) {
+                    if (fn.dbName.equals(db) && fn.typeName.equals(type)) {
+                        if (lowerFilter.isEmpty() || fn.fileName.toLowerCase().contains(lowerFilter)) {
+                            typeNode.add(new DefaultMutableTreeNode(fn));
                         }
                     }
                 }
@@ -143,6 +215,17 @@ public class SchemaExplorerPanel extends JPanel {
             sqlTextArea.setText(content);
             sqlTextArea.setCaretPosition(0);
             currentFileLabel.setText(" 📄 " + file.getAbsolutePath());
+
+            // Build line numbers
+            String[] lines = content.split("\n", -1);
+            StringBuilder lineNums = new StringBuilder();
+            for (int i = 1; i <= Math.max(1, lines.length); i++) {
+                lineNums.append(String.format(" %3d \n", i));
+            }
+            lineNumbersArea.setText(lineNums.toString());
+
+            statsLabel.setText(String.format(" Satır: %d | Karakter: %d | Boyut: %.2f KB | UTF-8 ",
+                    lines.length, content.length(), file.length() / 1024.0));
         } catch (Exception e) {
             sqlTextArea.setText("Dosya okunamadı: " + e.getMessage());
         }
@@ -166,17 +249,21 @@ public class SchemaExplorerPanel extends JPanel {
     }
 
     public static class FileNode {
-        public final String displayName;
+        public final String dbName;
+        public final String typeName;
+        public final String fileName;
         public final File file;
 
-        public FileNode(String displayName, File file) {
-            this.displayName = displayName;
+        public FileNode(String dbName, String typeName, String fileName, File file) {
+            this.dbName = dbName;
+            this.typeName = typeName;
+            this.fileName = fileName;
             this.file = file;
         }
 
         @Override
         public String toString() {
-            return "📄 " + displayName;
+            return "📄 " + fileName;
         }
     }
 }
