@@ -149,20 +149,14 @@ public class MainFrame extends JFrame {
         profileLabel.setFont(profileLabel.getFont().deriveFont(Font.BOLD, 12f));
         rightControls.add(profileLabel);
 
-        profileComboBox.setPreferredSize(new Dimension(200, 30));
+        profileComboBox.setPreferredSize(new Dimension(210, 30));
         profileComboBox.setFont(profileComboBox.getFont().deriveFont(Font.PLAIN, 12f));
         profileComboBox.addActionListener(e -> onProfileSelected());
         rightControls.add(profileComboBox);
 
-        JButton newProfileBtn = new JButton("+ Yeni");
-        newProfileBtn.setFont(newProfileBtn.getFont().deriveFont(Font.BOLD, 12f));
-        newProfileBtn.setToolTipText("Yeni profil oluştur");
-        newProfileBtn.addActionListener(e -> createNewProfile());
-        rightControls.add(newProfileBtn);
-
         JButton profileMenuBtn = new JButton("Yönet ▾");
-        profileMenuBtn.setFont(profileMenuBtn.getFont().deriveFont(Font.PLAIN, 12f));
-        profileMenuBtn.setToolTipText("Profil yönetim seçenekleri");
+        profileMenuBtn.setFont(profileMenuBtn.getFont().deriveFont(Font.BOLD, 12f));
+        profileMenuBtn.setToolTipText("Profil yönetim seçenekleri (Yeni Ekle, Çoğalt, Sil)");
         profileMenuBtn.addActionListener(e -> showProfileMenu(profileMenuBtn));
         rightControls.add(profileMenuBtn);
 
@@ -339,11 +333,22 @@ public class MainFrame extends JFrame {
         String selected = (String) profileComboBox.getSelectedItem();
         JPopupMenu menu = new JPopupMenu();
 
+        // Rounded border and internal padding
+        Color popupBorderColor = isDarkMode ? new Color(60, 65, 75) : new Color(210, 215, 225);
+        menu.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(popupBorderColor, 1, true),
+                BorderFactory.createEmptyBorder(6, 6, 6, 6)
+        ));
+
         JMenuItem itemNew = new JMenuItem("Yeni Profil Oluştur...");
+        itemNew.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        itemNew.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         itemNew.addActionListener(e -> createNewProfile());
         menu.add(itemNew);
 
         JMenuItem itemDuplicate = new JMenuItem("Mevcut Profili Çoğalt...");
+        itemDuplicate.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        itemDuplicate.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         itemDuplicate.addActionListener(e -> {
             if (selected != null) {
                 String copyName = JOptionPane.showInputDialog(this, "'" + selected + "' profilinin kopyası için yeni ad girin:", selected + "_Kopya");
@@ -362,11 +367,14 @@ public class MainFrame extends JFrame {
         menu.addSeparator();
 
         JMenuItem itemDelete = new JMenuItem("Seçili Profili Sil ('" + selected + "')...");
+        itemDelete.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        itemDelete.setBorder(BorderFactory.createEmptyBorder(6, 12, 6, 12));
         itemDelete.setForeground(new Color(220, 53, 69)); // Red safety accent
         itemDelete.addActionListener(e -> deleteSelectedProfile());
         menu.add(itemDelete);
 
-        menu.show(invoker, 0, invoker.getHeight());
+        // Show with a comfortable 4px gap below the button
+        menu.show(invoker, 0, invoker.getHeight() + 4);
     }
 
     private void deleteSelectedProfile() {
