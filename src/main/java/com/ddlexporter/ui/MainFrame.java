@@ -46,7 +46,7 @@ public class MainFrame extends JFrame {
     private boolean isLogVisible = true;
 
     public MainFrame() {
-        super("🐘 PostgreSQL DDL Export Studio - v2.0.0");
+        super("PostgreSQL DDL Export Studio - v2.0.0");
 
         // macOS Native Properties
         System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -72,9 +72,9 @@ public class MainFrame extends JFrame {
 
         // 1. Top Navbar Header
         topHeader = new JPanel(new BorderLayout(16, 0));
-        profileLabel = new JLabel("🗄️ Profil:");
+        profileLabel = new JLabel("Profil:");
         titleLabel = new JLabel("PostgreSQL DDL Export Studio");
-        themeToggleBtn = new JButton("🌙 Koyu Mod");
+        themeToggleBtn = new JButton("Koyu Tema");
 
         setupTopHeader();
 
@@ -104,20 +104,19 @@ public class MainFrame extends JFrame {
         statusBar.setPreferredSize(new Dimension(0, 36));
         statusBar.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
-                BorderFactory.createEmptyBorder(6, 16, 6, 16)
-        ));
+                BorderFactory.createEmptyBorder(6, 16, 6, 16)));
 
-        statusLabel = new JLabel("🟢 Hazır | PostgreSQL DDL Studio aktif.");
+        statusLabel = new JLabel("Hazır | PostgreSQL DDL Studio aktif.");
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 12f));
         statusBar.add(statusLabel, BorderLayout.WEST);
 
-        toggleLogBtn = new JButton("📊 Logları Gizle");
+        toggleLogBtn = new JButton("Logları Gizle");
         toggleLogBtn.setFont(toggleLogBtn.getFont().deriveFont(Font.PLAIN, 11f));
         toggleLogBtn.setFocusable(false);
         toggleLogBtn.addActionListener(e -> {
             isLogVisible = !isLogVisible;
             logPanel.setVisible(isLogVisible);
-            toggleLogBtn.setText(isLogVisible ? "📊 Logları Gizle" : "📊 Logları Göster");
+            toggleLogBtn.setText(isLogVisible ? "Logları Gizle" : "Logları Göster");
             mainSplit.setDividerLocation(isLogVisible ? 480 : 720);
         });
         statusBar.add(toggleLogBtn, BorderLayout.EAST);
@@ -134,8 +133,7 @@ public class MainFrame extends JFrame {
     private void setupTopHeader() {
         topHeader.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(215, 220, 230)),
-                BorderFactory.createEmptyBorder(10, 18, 10, 18)
-        ));
+                BorderFactory.createEmptyBorder(10, 18, 10, 18)));
 
         // Left Branding
         JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
@@ -233,13 +231,11 @@ public class MainFrame extends JFrame {
                 // Subtle gray top pressed highlight & seamless bottom
                 btn.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(2, 0, 0, rightBorder, topPressedColor),
-                        BorderFactory.createEmptyBorder(6, 16, 8, 16)
-                ));
+                        BorderFactory.createEmptyBorder(6, 16, 8, 16)));
             } else {
                 btn.setBorder(BorderFactory.createCompoundBorder(
                         BorderFactory.createMatteBorder(0, 0, 1, rightBorder, borderColor),
-                        BorderFactory.createEmptyBorder(8, 16, 8, 16)
-                ));
+                        BorderFactory.createEmptyBorder(8, 16, 8, 16)));
             }
         }
     }
@@ -257,26 +253,22 @@ public class MainFrame extends JFrame {
             topHeader.setBackground(new Color(24, 26, 32));
             topHeader.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(50, 55, 65)),
-                    BorderFactory.createEmptyBorder(10, 18, 10, 18)
-            ));
+                    BorderFactory.createEmptyBorder(10, 18, 10, 18)));
             titleLabel.setForeground(new Color(235, 240, 250));
             profileLabel.setForeground(new Color(200, 205, 215));
             statusBar.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(55, 65, 81)),
-                    BorderFactory.createEmptyBorder(6, 16, 6, 16)
-            ));
+                    BorderFactory.createEmptyBorder(6, 16, 6, 16)));
         } else {
             topHeader.setBackground(new Color(245, 247, 250));
             topHeader.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(215, 220, 230)),
-                    BorderFactory.createEmptyBorder(10, 18, 10, 18)
-            ));
+                    BorderFactory.createEmptyBorder(10, 18, 10, 18)));
             titleLabel.setForeground(new Color(25, 30, 40));
             profileLabel.setForeground(new Color(30, 35, 45));
             statusBar.setBorder(BorderFactory.createCompoundBorder(
                     BorderFactory.createMatteBorder(1, 0, 0, 0, new Color(210, 215, 225)),
-                    BorderFactory.createEmptyBorder(6, 16, 6, 16)
-            ));
+                    BorderFactory.createEmptyBorder(6, 16, 6, 16)));
         }
 
         updateTabBarStyles();
@@ -294,7 +286,8 @@ public class MainFrame extends JFrame {
         } catch (Throwable t) {
             try {
                 UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            } catch (Exception ignored) {}
+            } catch (Exception ignored) {
+            }
         }
     }
 
@@ -322,26 +315,31 @@ public class MainFrame extends JFrame {
             PostgresqlConfigurationSettings settings = profileManager.getProfile(selected);
             if (settings != null) {
                 connectionPanel.loadSettingsToUi(settings);
-                statusLabel.setText("🟢 Profil: " + selected + " (" + settings.getServerHost() + ":" + settings.getPort() + "/" + settings.getDatabaseName() + ")");
+                statusLabel.setText("Profil: " + selected + " (" + settings.getServerHost() + ":"
+                        + settings.getPort() + "/" + settings.getDatabaseName() + ")");
             }
         }
     }
 
     private void createNewProfile() {
-        String name = JOptionPane.showInputDialog(this, "Yeni profil adını girin (Örn: Production, Staging):", "Yeni Profil", JOptionPane.QUESTION_MESSAGE);
+        String name = JOptionPane.showInputDialog(this, "Yeni profil adını girin (Örn: Production, Staging):",
+                "Yeni Profil", JOptionPane.QUESTION_MESSAGE);
         if (name != null && !name.isBlank()) {
             PostgresqlConfigurationSettings settings = connectionPanel.getSettingsFromUi();
             profileManager.addOrUpdateProfile(name.trim(), settings);
             refreshProfileDropdown();
             profileComboBox.setSelectedItem(name.trim());
-            JOptionPane.showMessageDialog(this, "'" + name + "' profili başarıyla kaydedildi!", "Başarılı", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "'" + name + "' profili başarıyla kaydedildi!", "Başarılı",
+                    JOptionPane.INFORMATION_MESSAGE);
         }
     }
 
     private void deleteSelectedProfile() {
         String selected = (String) profileComboBox.getSelectedItem();
         if (selected != null) {
-            int confirm = JOptionPane.showConfirmDialog(this, "'" + selected + "' profilini silmek istediğinize emin misiniz?", "Profili Sil", JOptionPane.YES_NO_OPTION);
+            int confirm = JOptionPane.showConfirmDialog(this,
+                    "'" + selected + "' profilini silmek istediğinize emin misiniz?", "Profili Sil",
+                    JOptionPane.YES_NO_OPTION);
             if (confirm == JOptionPane.YES_OPTION) {
                 profileManager.deleteProfile(selected);
                 refreshProfileDropdown();
@@ -360,7 +358,7 @@ public class MainFrame extends JFrame {
 
         connectionPanel.setExporting(true);
         logPanel.setProgressIndeterminate(true, "DDL Dışa Aktarma İşlemi Başlatıldı...");
-        statusLabel.setText("⏳ DDL çıkarma işlemi devam ediyor...");
+        statusLabel.setText("DDL çıkarma işlemi devam ediyor...");
 
         ILogger guiLogger = new GuiLogger(logPanel::appendLog);
 
@@ -394,8 +392,8 @@ public class MainFrame extends JFrame {
             protected void done() {
                 connectionPanel.setExporting(false);
                 if (exportError == null) {
-                    logPanel.setProgress(100, "✅ DDL Aktarımı Başarıyla Tamamlandı!");
-                    statusLabel.setText("✅ DDL Başarıyla Aktarıldı! (" + outputDir + ")");
+                    logPanel.setProgress(100, "DDL Aktarımı Başarıyla Tamamlandı!");
+                    statusLabel.setText("DDL Başarıyla Aktarıldı! (" + outputDir + ")");
                     schemaExplorerPanel.loadExportDirectory(outputDir);
                     diffViewerPanel.setExportDir(outputDir);
                     gitSyncPanel.refreshGitStatus();
@@ -405,8 +403,8 @@ public class MainFrame extends JFrame {
                             "Tüm PostgreSQL veritabanı DDL script'leri başarıyla dışa aktarıldı!",
                             "İşlem Başarılı", JOptionPane.INFORMATION_MESSAGE);
                 } else {
-                    logPanel.setProgress(0, "❌ Hata Oluştu!");
-                    statusLabel.setText("❌ Hata: " + exportError.getMessage());
+                    logPanel.setProgress(0, "Hata Oluştu!");
+                    statusLabel.setText("Hata: " + exportError.getMessage());
                     logPanel.appendLog("[HATA] " + exportError.getMessage());
                     JOptionPane.showMessageDialog(MainFrame.this,
                             "Dışa aktarma sırasında hata oluştu:\n" + exportError.getMessage(),
@@ -419,7 +417,8 @@ public class MainFrame extends JFrame {
     private void initAppIcon() {
         try {
             int size = 128;
-            java.awt.image.BufferedImage icon = new java.awt.image.BufferedImage(size, size, java.awt.image.BufferedImage.TYPE_INT_ARGB);
+            java.awt.image.BufferedImage icon = new java.awt.image.BufferedImage(size, size,
+                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2 = icon.createGraphics();
             g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
@@ -427,12 +426,13 @@ public class MainFrame extends JFrame {
             g2.setPaint(gp);
             g2.fillRoundRect(8, 8, size - 16, size - 16, 28, 28);
 
-            g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 64));
+            g2.setColor(Color.WHITE);
+            g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 52));
             FontMetrics fm = g2.getFontMetrics();
-            String emoji = "🐘";
-            int x = (size - fm.stringWidth(emoji)) / 2;
+            String titleText = "PG";
+            int x = (size - fm.stringWidth(titleText)) / 2;
             int y = (size - fm.getHeight()) / 2 + fm.getAscent() - 2;
-            g2.drawString(emoji, x, y);
+            g2.drawString(titleText, x, y);
             g2.dispose();
 
             setIconImage(icon);
@@ -443,6 +443,7 @@ public class MainFrame extends JFrame {
                     taskbar.setIconImage(icon);
                 }
             }
-        } catch (Throwable ignored) {}
+        } catch (Throwable ignored) {
+        }
     }
 }
