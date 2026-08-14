@@ -20,9 +20,9 @@ public class ConnectionPanel extends JPanel {
     private final JTextField hostField = new JTextField("localhost");
     private final JTextField portField = new JTextField("5432");
     private final JTextField dbNameField = new JTextField("denemeDatabase");
+    private final JTextField schemaField = new JTextField("public");
     private final JTextField userField = new JTextField("postgres");
     private final JPasswordField passField = new JPasswordField("12345");
-    private final JTextField schemaField = new JTextField("public");
     private final JTextField outputDirField = new JTextField("./export_output");
 
     private final JButton testBtn = new JButton("Bağlantıyı Test Et");
@@ -32,75 +32,120 @@ public class ConnectionPanel extends JPanel {
     private final JButton zipBtn = new JButton("ZIP İndir");
 
     public ConnectionPanel(Runnable onStartExport) {
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createTitledBorder("PostgreSQL Bağlantı & Dışa Aktarma Ayarları"));
+        setLayout(new BorderLayout());
+        setOpaque(false);
 
-        // Form Grid
-        JPanel formPanel = new JPanel(new GridBagLayout());
+        // Center Container: Maximum width card layout (Clean, compact, no endless stacked bars)
+        JPanel centerWrapper = new JPanel(new GridBagLayout());
+        centerWrapper.setOpaque(false);
+
+        JPanel cardPanel = new JPanel(new BorderLayout(0, 16));
+        cardPanel.setPreferredSize(new Dimension(680, 480));
+        cardPanel.setMaximumSize(new Dimension(720, 520));
+        cardPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createTitledBorder("PostgreSQL Bağlantı & Dışa Aktarma Ayarları"),
+                BorderFactory.createEmptyBorder(12, 16, 16, 16)
+        ));
+
+        // Form Fields (2 Columns Grid)
+        JPanel fieldsPanel = new JPanel(new GridBagLayout());
+        fieldsPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(4, 6, 4, 6);
+        gbc.insets = new Insets(6, 6, 6, 6);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.weightx = 1.0;
 
-        int row = 0;
-        addFormField(formPanel, gbc, row++, "Sunucu (Host):", hostField);
-        addFormField(formPanel, gbc, row++, "Port:", portField);
-        addFormField(formPanel, gbc, row++, "Veritabanı Adı:", dbNameField);
-        addFormField(formPanel, gbc, row++, "Kullanıcı Adı:", userField);
-        addFormField(formPanel, gbc, row++, "Şifre:", passField);
-        addFormField(formPanel, gbc, row++, "Şema:", schemaField);
+        // Row 1: Host (75%) & Port (25%)
+        gbc.gridx = 0; gbc.gridy = 0; gbc.weightx = 0.75;
+        fieldsPanel.add(createFieldGroup("Sunucu (Host):", hostField), gbc);
 
-        // Output Directory with Browse Button
-        JPanel dirPanel = new JPanel(new BorderLayout(4, 0));
-        dirPanel.add(outputDirField, BorderLayout.CENTER);
-        JButton browseBtn = new JButton("...");
-        browseBtn.setPreferredSize(new Dimension(30, 24));
+        gbc.gridx = 1; gbc.gridy = 0; gbc.weightx = 0.25;
+        fieldsPanel.add(createFieldGroup("Port:", portField), gbc);
+
+        // Row 2: Database Name (50%) & Schema (50%)
+        gbc.gridx = 0; gbc.gridy = 1; gbc.weightx = 0.5;
+        fieldsPanel.add(createFieldGroup("Veritabanı Adı:", dbNameField), gbc);
+
+        gbc.gridx = 1; gbc.gridy = 1; gbc.weightx = 0.5;
+        fieldsPanel.add(createFieldGroup("Şema (Schema):", schemaField), gbc);
+
+        // Row 3: Username (50%) & Password (50%)
+        gbc.gridx = 0; gbc.gridy = 2; gbc.weightx = 0.5;
+        fieldsPanel.add(createFieldGroup("Kullanıcı Adı:", userField), gbc);
+
+        gbc.gridx = 1; gbc.gridy = 2; gbc.weightx = 0.5;
+        fieldsPanel.add(createFieldGroup("Şifre:", passField), gbc);
+
+        // Row 4: Output Directory (Full Width with Browse button)
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 2; gbc.weightx = 1.0;
+        JPanel dirGroup = new JPanel(new BorderLayout(6, 0));
+        dirGroup.setOpaque(false);
+        dirGroup.add(outputDirField, BorderLayout.CENTER);
+        JButton browseBtn = new JButton("Gözat...");
         browseBtn.addActionListener(e -> chooseOutputDirectory());
-        dirPanel.add(browseBtn, BorderLayout.EAST);
-        addFormField(formPanel, gbc, row++, "Çıktı Dizini:", dirPanel);
+        dirGroup.add(browseBtn, BorderLayout.EAST);
+        fieldsPanel.add(createFieldGroup("Çıktı Dizini (Export Directory):", dirGroup), gbc);
 
-        add(formPanel, BorderLayout.NORTH);
+        cardPanel.add(fieldsPanel, BorderLayout.CENTER);
 
-        // Action Buttons
-        JPanel actionPanel = new JPanel(new GridLayout(5, 1, 6, 6));
-        actionPanel.setBorder(BorderFactory.createEmptyBorder(10, 6, 10, 6));
+        // Action Buttons: Modern Horizontal Layout
+        JPanel actionsContainer = new JPanel(new GridLayout(2, 1, 8, 8));
+        actionsContainer.setOpaque(false);
 
-        testBtn.setBackground(new Color(40, 100, 180));
-        testBtn.setForeground(Color.WHITE);
-        testBtn.setFont(testBtn.getFont().deriveFont(Font.BOLD));
+        // Primary Row
+        JPanel primaryRow = new JPanel(new GridLayout(1, 3, 10, 0));
+        primaryRow.setOpaque(false);
+
+        testBtn.setPreferredSize(new Dimension(0, 36));
+        testBtn.setFont(testBtn.getFont().deriveFont(Font.BOLD, 12f));
         testBtn.addActionListener(e -> testConnection());
-        actionPanel.add(testBtn);
+        primaryRow.add(testBtn);
 
+        exportBtn.setPreferredSize(new Dimension(0, 38));
         exportBtn.setBackground(new Color(34, 139, 34));
         exportBtn.setForeground(Color.WHITE);
         exportBtn.setFont(exportBtn.getFont().deriveFont(Font.BOLD, 13f));
         exportBtn.addActionListener(e -> {
             if (onStartExport != null) onStartExport.run();
         });
-        actionPanel.add(exportBtn);
+        primaryRow.add(exportBtn);
 
+        saveSettingsBtn.setPreferredSize(new Dimension(0, 36));
+        saveSettingsBtn.setFont(saveSettingsBtn.getFont().deriveFont(Font.BOLD, 12f));
         saveSettingsBtn.addActionListener(e -> saveSettingsToJson());
-        actionPanel.add(saveSettingsBtn);
+        primaryRow.add(saveSettingsBtn);
 
+        actionsContainer.add(primaryRow);
+
+        // Secondary Row (Quick Tools)
+        JPanel secondaryRow = new JPanel(new GridLayout(1, 2, 10, 0));
+        secondaryRow.setOpaque(false);
+
+        openFolderBtn.setPreferredSize(new Dimension(0, 32));
         openFolderBtn.addActionListener(e -> openOutputFolder());
-        actionPanel.add(openFolderBtn);
+        secondaryRow.add(openFolderBtn);
 
+        zipBtn.setPreferredSize(new Dimension(0, 32));
         zipBtn.addActionListener(e -> exportAsZip());
-        actionPanel.add(zipBtn);
+        secondaryRow.add(zipBtn);
 
-        add(actionPanel, BorderLayout.CENTER);
+        actionsContainer.add(secondaryRow);
+        cardPanel.add(actionsContainer, BorderLayout.SOUTH);
+
+        centerWrapper.add(cardPanel);
+        add(centerWrapper, BorderLayout.CENTER);
     }
 
-    private void addFormField(JPanel panel, GridBagConstraints gbc, int row, String label, JComponent field) {
-        gbc.gridx = 0;
-        gbc.gridy = row;
-        gbc.weightx = 0.3;
-        panel.add(new JLabel(label), gbc);
+    private JPanel createFieldGroup(String labelText, JComponent field) {
+        JPanel panel = new JPanel(new BorderLayout(0, 4));
+        panel.setOpaque(false);
+        JLabel label = new JLabel(labelText);
+        label.setFont(label.getFont().deriveFont(Font.BOLD, 11f));
+        label.setForeground(new Color(80, 85, 95));
+        panel.add(label, BorderLayout.NORTH);
 
-        gbc.gridx = 1;
-        gbc.gridy = row;
-        gbc.weightx = 0.7;
-        panel.add(field, gbc);
+        field.setPreferredSize(new Dimension(field.getPreferredSize().width, 30));
+        panel.add(field, BorderLayout.CENTER);
+        return panel;
     }
 
     public PostgresqlConfigurationSettings getSettingsFromUi() {
