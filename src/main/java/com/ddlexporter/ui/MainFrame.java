@@ -68,7 +68,7 @@ public class MainFrame extends JFrame {
         connectionPanel = new ConnectionPanel(this::startExportProcess);
         schemaExplorerPanel = new SchemaExplorerPanel();
         serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager, diagnosticsManager);
-        diffViewerPanel = new DiffViewerPanel();
+        diffViewerPanel = new DiffViewerPanel(profileManager);
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
 
@@ -336,6 +336,9 @@ public class MainFrame extends JFrame {
         var profiles = profileManager.getProfiles();
         for (String name : profiles.keySet()) {
             profileComboBox.addItem(name);
+        }
+        if (diffViewerPanel != null) {
+            diffViewerPanel.refreshProfiles();
         }
     }
 
