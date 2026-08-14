@@ -1,0 +1,9 @@
+{
+  "enabled" : true,
+  "intervalMinutes" : 60,
+  "targetProfile" : "Local Docker (5432)",
+  "autoGitCommit" : true,
+  "lastRunTime" : "2026-08-14 16:34:32",
+  "lastStatus" : "BAŞARILI (51 ms)",
+  "totalRuns" : 1
+}
