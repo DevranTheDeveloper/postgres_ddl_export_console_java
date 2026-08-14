@@ -56,11 +56,19 @@ public class LogPanel extends JPanel {
         JButton clearBtn = new JButton("Temizle");
         clearBtn.setPreferredSize(new Dimension(75, 24));
         clearBtn.setFont(clearBtn.getFont().deriveFont(Font.PLAIN, 11f));
-        clearBtn.addActionListener(e -> textPane.setText(""));
+        clearBtn.addActionListener(e -> clearLogs());
         bottomPanel.add(clearBtn, BorderLayout.EAST);
 
         add(bottomPanel, BorderLayout.SOUTH);
         applyTheme(false);
+    }
+
+    public void clearLogs() {
+        textPane.setText("");
+        statusLabel.setText("Durum: Hazır");
+        progressBar.setIndeterminate(false);
+        progressBar.setValue(0);
+        percentLabel.setText("%0");
     }
 
     public void appendLog(String message) {
