@@ -75,6 +75,15 @@ public class MainFrame extends JFrame {
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();
 
+        // Connect ERD visual navigation to SQL editor and Diff viewer
+        erDiagramPanel.setTableNavigateListener(tableName -> {
+            selectTab(CARD_SCHEMA);
+            schemaExplorerPanel.openTableFile(tableName);
+        });
+        erDiagramPanel.setDiffNavigateListener(tableName -> {
+            selectTab(CARD_DIFF);
+        });
+
         // Connect SQL save events to sync Diff, ERD, Git, and Audit Log
         schemaExplorerPanel.setOnFileSavedListener(() -> {
             String outDir = connectionPanel.getOutputDir();

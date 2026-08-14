@@ -282,4 +282,19 @@ public class ErDiagramEngine {
         }
         return sb.toString();
     }
+
+    public static String generateTableDdl(ErTable tbl) {
+        if (tbl == null) return "";
+        StringBuilder sb = new StringBuilder();
+        sb.append("CREATE TABLE IF NOT EXISTS ").append(tbl.schema != null ? tbl.schema + "." : "public.").append(tbl.name).append(" (\n");
+        int idx = 0;
+        for (ErColumn col : tbl.columns) {
+            sb.append("    ").append(col.name).append(" ").append(col.type);
+            if (col.isPk) sb.append(" PRIMARY KEY");
+            if (++idx < tbl.columns.size()) sb.append(",");
+            sb.append("\n");
+        }
+        sb.append(");");
+        return sb.toString();
+    }
 }

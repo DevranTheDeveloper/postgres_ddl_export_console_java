@@ -410,6 +410,21 @@ public class SchemaExplorerPanel extends JPanel {
         }
     }
 
+    public boolean openTableFile(String tableName) {
+        if (tableName == null || tableName.isBlank()) return false;
+        String target = tableName.toLowerCase();
+        if (!target.endsWith(".sql")) target += ".sql";
+
+        for (FileNode node : allDiscoveredFiles) {
+            if (node.fileName.equalsIgnoreCase(target) || node.fileName.toLowerCase().contains(tableName.toLowerCase())) {
+                loadFileContent(node.file);
+                searchField.setText(tableName);
+                return true;
+            }
+        }
+        return false;
+    }
+
     private void copySqlToClipboard() {
         String text = sqlTextArea.getText();
         if (text != null && !text.isBlank()) {

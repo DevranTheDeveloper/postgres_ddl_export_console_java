@@ -12,6 +12,7 @@ import java.awt.event.*;
 import java.awt.geom.CubicCurve2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.util.function.Consumer;
 
 public class ErDiagramPanel extends JPanel {
     private ErDiagramEngine.ErModel model;
@@ -20,6 +21,9 @@ public class ErDiagramPanel extends JPanel {
     private String highlightQuery = "";
     private boolean isDark = false;
     private File currentExportDir = null;
+
+    private Consumer<String> tableNavigateListener = null;
+    private Consumer<String> diffNavigateListener = null;
 
     public ErDiagramPanel() {
         setLayout(new BorderLayout(5, 5));
@@ -49,6 +53,12 @@ public class ErDiagramPanel extends JPanel {
         });
         leftControls.add(new JLabel("Tablo Ara:"));
         leftControls.add(searchField);
+
+        JLabel tipLabel = new JLabel("(💡 Tabloya çift tıklayarak SQL koduna gidebilirsiniz)");
+        tipLabel.setFont(tipLabel.getFont().deriveFont(Font.ITALIC, 11f));
+        tipLabel.setForeground(new Color(110, 120, 135));
+        leftControls.add(tipLabel);
+
         topBar.add(leftControls, BorderLayout.WEST);
 
         JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
@@ -94,6 +104,14 @@ public class ErDiagramPanel extends JPanel {
 
         // 2. Center: Interactive Drawing Canvas
         add(canvas, BorderLayout.CENTER);
+    }
+
+    public void setTableNavigateListener(Consumer<String> listener) {
+        this.tableNavigateListener = listener;
+    }
+
+    public void setDiffNavigateListener(Consumer<String> listener) {
+        this.diffNavigateListener = listener;
     }
 
     private void updateHighlight() {
@@ -168,6 +186,11 @@ public class ErDiagramPanel extends JPanel {
                 public void mousePressed(MouseEvent e) {
                     Point worldPt = screenToWorld(e.getPoint());
 
+                    if (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)) {
+                        handleContextMenu(e, worldPt);
+                        return;
+                    }
+
                     // Check if clicked on a table
                     draggedTable = findTableAt(worldPt.x, worldPt.y);
                     if (draggedTable != null) {
@@ -176,6 +199,28 @@ public class ErDiagramPanel extends JPanel {
                     } else {
                         // Canvas pan
                         dragStart = e.getPoint();
+                    }
+                }
+
+                @Override
+                public void mouseReleased(MouseEvent e) {
+                    if (e.isPopupTrigger() || SwingUtilities.isRightMouseButton(e)) {
+                        Point worldPt = screenToWorld(e.getPoint());
+                        handleContextMenu(e, worldPt);
+                        return;
+                    }
+                    draggedTable = null;
+                    dragStart = null;
+                }
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e)) {
+                        Point worldPt = screenToWorld(e.getPoint());
+                        ErDiagramEngine.ErTable table = findTableAt(worldPt.x, worldPt.y);
+                        if (table != null && tableNavigateListener != null) {
+                            tableNavigateListener.accept(table.name);
+                        }
                     }
                 }
 
@@ -195,12 +240,6 @@ public class ErDiagramPanel extends JPanel {
                 }
 
                 @Override
-                public void mouseReleased(MouseEvent e) {
-                    draggedTable = null;
-                    dragStart = null;
-                }
-
-                @Override
                 public void mouseWheelMoved(MouseWheelEvent e) {
                     if (e.getWheelRotation() < 0) {
                         zoom(1.1);
@@ -213,6 +252,46 @@ public class ErDiagramPanel extends JPanel {
             addMouseListener(mouseHandler);
             addMouseMotionListener(mouseHandler);
             addMouseWheelListener(mouseHandler);
+        }
+
+        private void handleContextMenu(MouseEvent e, Point worldPt) {
+            ErDiagramEngine.ErTable table = findTableAt(worldPt.x, worldPt.y);
+            if (table == null) return;
+
+            JPopupMenu menu = new JPopupMenu();
+
+            JMenuItem openSqlItem = new JMenuItem("📄 SQL Gezgininde Aç / Düzenle (" + table.name + ".sql)");
+            openSqlItem.setFont(openSqlItem.getFont().deriveFont(Font.BOLD));
+            openSqlItem.addActionListener(ev -> {
+                if (tableNavigateListener != null) tableNavigateListener.accept(table.name);
+            });
+            menu.add(openSqlItem);
+
+            JMenuItem copyDdlItem = new JMenuItem("📋 Tablo DDL Scriptini Kopyala");
+            copyDdlItem.addActionListener(ev -> {
+                String ddl = ErDiagramEngine.generateTableDdl(table);
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(ddl), null);
+                JOptionPane.showMessageDialog(ErDiagramPanel.this,
+                        "'" + table.name + "' tablosunun DDL tanımı panoya kopyalandı!",
+                        "Kopyalandı", JOptionPane.INFORMATION_MESSAGE);
+            });
+            menu.add(copyDdlItem);
+
+            menu.addSeparator();
+
+            JMenuItem focusItem = new JMenuItem("🔍 Sadece Bu Tabloyu Vurgula");
+            focusItem.addActionListener(ev -> {
+                searchField.setText(table.name);
+            });
+            menu.add(focusItem);
+
+            JMenuItem diffItem = new JMenuItem("🌐 Şema Farkında (Diff) Karşılaştır");
+            diffItem.addActionListener(ev -> {
+                if (diffNavigateListener != null) diffNavigateListener.accept(table.name);
+            });
+            menu.add(diffItem);
+
+            menu.show(this, e.getX(), e.getY());
         }
 
         public void zoom(double factor) {
@@ -360,7 +439,7 @@ public class ErDiagramPanel extends JPanel {
             // Header Background
             g2.setColor(isDark ? new Color(34, 40, 56) : new Color(238, 242, 248));
             g2.fillRoundRect(table.x, table.y, table.width, 28, 12, 12);
-            g2.fillRect(table.x, table.y + 16, table.width, 12); // Square off bottom corners of header
+            g2.fillRect(table.x, table.y + 16, table.width, 12);
 
             // Header Separator
             g2.setColor(isDark ? new Color(50, 56, 72) : new Color(215, 220, 230));
@@ -378,10 +457,10 @@ public class ErDiagramPanel extends JPanel {
             for (ErDiagramEngine.ErColumn col : table.columns) {
                 // Key Badges: PK 🔑 / FK 🔗
                 if (col.isPk) {
-                    g2.setColor(new Color(234, 179, 8)); // Gold
+                    g2.setColor(new Color(234, 179, 8));
                     g2.drawString("🔑", table.x + 8, rowY);
                 } else if (col.isFk) {
-                    g2.setColor(new Color(59, 130, 246)); // Blue
+                    g2.setColor(new Color(59, 130, 246));
                     g2.drawString("🔗", table.x + 8, rowY);
                 }
 
