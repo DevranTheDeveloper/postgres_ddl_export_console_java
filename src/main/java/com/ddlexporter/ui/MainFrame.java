@@ -644,31 +644,25 @@ public class MainFrame extends JFrame {
 
     private void initAppIcon() {
         try {
-            int size = 128;
-            java.awt.image.BufferedImage icon = new java.awt.image.BufferedImage(size, size,
-                    java.awt.image.BufferedImage.TYPE_INT_ARGB);
-            Graphics2D g2 = icon.createGraphics();
-            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            java.awt.Image icon = null;
+            var res = getClass().getResourceAsStream("/app_icon.png");
+            if (res != null) {
+                icon = javax.imageio.ImageIO.read(res);
+            } else {
+                File localImg = new File("src/main/resources/app_icon.png");
+                if (localImg.exists()) {
+                    icon = javax.imageio.ImageIO.read(localImg);
+                }
+            }
 
-            GradientPaint gp = new GradientPaint(0, 0, new Color(41, 128, 185), size, size, new Color(44, 62, 80));
-            g2.setPaint(gp);
-            g2.fillRoundRect(8, 8, size - 16, size - 16, 28, 28);
+            if (icon != null) {
+                setIconImage(icon);
 
-            g2.setColor(Color.WHITE);
-            g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 52));
-            FontMetrics fm = g2.getFontMetrics();
-            String titleText = "PG";
-            int x = (size - fm.stringWidth(titleText)) / 2;
-            int y = (size - fm.getHeight()) / 2 + fm.getAscent() - 2;
-            g2.drawString(titleText, x, y);
-            g2.dispose();
-
-            setIconImage(icon);
-
-            if (Taskbar.isTaskbarSupported()) {
-                Taskbar taskbar = Taskbar.getTaskbar();
-                if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
-                    taskbar.setIconImage(icon);
+                if (Taskbar.isTaskbarSupported()) {
+                    Taskbar taskbar = Taskbar.getTaskbar();
+                    if (taskbar.isSupported(Taskbar.Feature.ICON_IMAGE)) {
+                        taskbar.setIconImage(icon);
+                    }
                 }
             }
         } catch (Throwable ignored) {
