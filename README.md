@@ -1,48 +1,68 @@
-# PostgreSQL DDL Studio (v5.0.0)
+# PostgreSQL DDL Studio (v5.4.0)
 
-**PostgreSQL DDL Studio**, modern PostgreSQL veritabanları için geliştirilmiş; interaktif şema gezgini, görsel ERD ilişki haritası, canlı sunucu performans izleme paneli, çoklu ortam şema farkı (Diff) motoru, arka plan zamanlanmış otomatik yedekleme (Cron) ve kurumsal düzeyde AES-256 GCM güvenlik kalkanı sunan profesyonel bir masaüstü geliştirici stüdyosudur.
+[![macOS](https://img.shields.io/badge/Platform-macOS-blue?logo=apple)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest)
+[![Windows](https://img.shields.io/badge/Platform-Windows-0078D6?logo=windows)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest)
+[![Linux](https://img.shields.io/badge/Platform-Linux-FCC624?logo=linux&logoColor=black)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest)
+[![Java](https://img.shields.io/badge/Java-17+-ED8B00?logo=openjdk&logoColor=white)](https://adoptium.net/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+
+**PostgreSQL DDL Studio**, modern PostgreSQL veritabanları için geliştirilmiş; interaktif şema gezgini, görsel ERD ilişki haritası, evrensel Docker ve bulut (Neon, Supabase, AWS RDS) bağlantı asistanı, canlı sunucu performans izleme paneli, çoklu ortam şema farkı (Diff) motoru, arka plan zamanlanmış otomatik yedekleme (Cron) ve kurumsal düzeyde AES-256 GCM güvenlik kalkanı sunan **çok platformlu (Cross-Platform)** profesyonel bir masaüstü geliştirici stüdyosudur.
+
+---
+
+## 📦 İndirme & Sürümler (Downloads & Releases)
+
+En son sürüm olan **v5.4.0** paketlerini doğrudan aşağıdaki bağlantılardan indirebilirsiniz:
+
+| Platform | Format / Paket | İndirme Bağlantısı | Açıklama |
+| :--- | :--- | :--- | :--- |
+| 🍏 **macOS** | `.dmg` Yükleyici | [📥 **PostgreSQL-DDL-Studio-5.4.0-macOS.dmg**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.4.0-macOS.dmg) | Apple Silicon (M1/M2/M3/M4) & Intel uyumlu |
+| 🪟 **Windows** | Portable `.zip` | [📥 **PostgreSQL-DDL-Studio-5.4.0-Windows.zip**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.4.0-Windows.zip) | Windows 10 / 11 (64-bit), sessiz başlatıcılı (.vbs) |
+| 🐧 **Linux** | Portable `.tar.gz` | [📥 **PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz) | Ubuntu, Debian, Fedora, Arch (.sh / .desktop) |
+| ☕ **Evrensel JAR** | Fat `.jar` | [📥 **postgres_ddl_export_console_java-1.0.0.jar**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/postgres_ddl_export_console_java-1.0.0.jar) | Tüm platformlar, CLI ve Sunucu otomasyonu |
 
 ---
 
 ## 🚀 Öne Çıkan Yetenekler & Özellikler
 
-### 1. 📂 İnteraktif Şema & SQL Gezgini
+### 1. ⚡ Evrensel Veritabanı & Docker Asistanı (Universal DB Hub)
+- **Konteyner Keşfi:** Bilgisayardaki tüm Docker PostgreSQL konteynerlerini otomatik tarar ve listeler.
+- **Tek Tıkla Demo Başlat:** Sıfırdan tek tıkla PostgreSQL 16 konteyneri ayağa kaldırır.
+- **Bulut Bağlantı URL (URI Parser):** Neon, Supabase, AWS RDS, Render, Railway vb. bağlantı dizelerini (`postgresql://...`) tek tıkla çözüp bağlanır.
+- **Yerel Servis Algılama:** Homebrew, Postgres.app veya Windows servisi olarak çalışan `localhost:5432` portunu otomatik bağlar.
+- **Örnek Şema Enjeksiyonu (Seed Data):** Boş veritabanlarına tek tıkla E-Ticaret, SaaS veya Blog örnek tablolarını yükler.
+
+### 2. 📂 İnteraktif Şema & SQL Gezgini
 - **Ağaç Tabanlı Nesne Gezgini:** Tablolar, Görünümler (View), Fonksiyonlar, Saklı Yordamlar, İndeksler, Diziler (Sequence) ve Tipleri klasörlenmiş hiyerarşide listeler.
 - **Dahili SQL Editörü:** DDL betiklerini anlık düzenleme, satır numaraları, arama/filtreleme ve sözdizimi biçimlendirme (`[ Formatla ]`).
 - **Disk ve ZIP Arşivleme:** Şema klasörünü tek tıkla `.zip` arşivi olarak dışa aktarma (`[ ZIP Arşivle ]`).
-- **Otomatik Odaklanma:** Üst bardan profil değiştirildiğinde ilgili veritabanının ağaç düğümüne otomatik odaklanma ve genişletme.
 
-### 2. 🗺️ Görsel İlişki Haritası (Interactive ER Diagram)
+### 3. 🗺️ Görsel İlişki Haritası (Interactive ER Diagram)
 - **Dinamik Java2D Canvas:** Panning (sürükle-bırak), fare tekerleğiyle Smooth Zooming (%20 - %300).
 - **Yumuşak Bézier Eğrileri:** Tablolar arasındaki Foreign Key (FK) ilişkilerini yumuşak Bézier eğrileri ile görselleştirir.
-- **Taşınabilir Tablo Kartları:** Tablo kartlarını tuval üzerinde serbestçe sürükleyip yeniden konumlandırma.
-- **Kısayol ve Navigasyon:** Tabloya çift tıklayarak SQL Gezgininde ilgili DDL dosyasını açma.
 - **Dışa Aktarma:** Mermaid Markdown kodunu panoya kopyalama (`[ Mermaid Kopyala ]`) veya yüksek çözünürlüklü PNG (`[ PNG İndir ]`) çıktısı alma.
 
-### 3. 🌐 Çoklu Ortam Şema Farkı & Dağıtım Motoru (Live Diff Engine)
+### 4. 🌐 Çoklu Ortam Şema Farkı & Dağıtım Motoru (Live Diff Engine)
 - **Staging vs Production Karşılaştırma:** İki farklı canlı veritabanı profilini (örneğin Test ile Canlı) yan yana koyup nesne bazında farkları tespit eder.
 - **Otomatik Dağıtım Yaması (Deploy Patch):** Eksik veya değişen tabloları hedef ortamla eşitleyecek SQL yamasını tek tıkla üretir.
-- **Kritik Veri Kaybı Koruması:** `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` ve `CASCADE` gibi yıkıcı operasyonlar öncesinde güvenlik onayı ve risk uyarısı gösterir.
+- **Kritik Veri Kaybı Koruması:** `DROP TABLE`, `DROP COLUMN`, `TRUNCATE` ve `CASCADE` öncesinde güvenlik onayı gösterir.
 
-### 4. 📊 Canlı PostgreSQL Sunucu Durumu & Metrikler
-- **Gerçek Zamanlı KPI Kartları:** Aktif bağlantı havuzu, toplam veritabanı boyutu, önbellek verimliliği (Cache Hit Rate %) ve anlık işlem istatistikleri.
-- **Java2D Performans Grafiği:** Canlı Commit / Rollback ve Önbellek oranlarını dinamik çubuk ve çizgi grafiklerle görselleştirir.
-- **Canlı Oturum & Sorgu Tablosu:** Sunucuda o an koşan sorguları (`pg_stat_activity`), tablo boyutlarını ve işlem geçmişini canlı izleme.
-- **Kapsamlı Sistem Teşhis (Diagnostics):** Bağlantı ve sunucu sağlığını otomatik analiz eden denetim penceresi.
+### 5. 📊 Canlı PostgreSQL Sunucu Durumu & Metrikler
+- **Gerçek Zamanlı KPI Kartları:** Aktif bağlantı havuzu, toplam veritabanı boyutu, önbellek verimliliği (Cache Hit Rate %) ve işlem istatistikleri.
+- **Java2D Performans Grafiği:** Canlı Commit / Rollback ve Önbellek oranlarını dinamik grafiklerle görselleştirir.
+- **Canlı Oturum Tablosu:** Sunucuda o an koşan sorguları (`pg_stat_activity`), tablo boyutlarını ve işlem geçmişini canlı izleme.
 
-### 5. ⏱️ Otomatik Zamanlanmış Yedekleme & Cron Motoru
+### 6. ⏱️ Otomatik Zamanlanmış Yedekleme & Cron Motoru
 - **Esnek Zamanlama:** 15 dk, 30 dk, 1 saat, 6 saat veya 24 saatlik aralıklarla arka planda otomatik DDL yedeği alma.
 - **Otomatik Git Senkronizasyonu:** Yedekleme sonrasında DDL değişikliklerini otomatik olarak Git deposuna commit edebilme.
-- **Canlı Durum ve Kolay Durdurma:** Üst bardan anlık durum rozeti takibi ve tek tıkla **`[ Zamanlayıcıyı Durdur ]`** / **`[ Kaydet & Başlat ]`** kontrolü.
 
-### 6. 🛡️ Kurumsal Güvenlik Kalkanı
+### 7. 🛡️ Kurumsal Güvenlik Kalkanı
 - **AES-256 GCM Parola Koruması:** `profiles.json` içinde şifreler asla düz metin (plain text) saklanmaz; makine anahtarıyla şifrelenir (`ENC(...)`).
-- **Git Sızıntı Kalkanı:** Hassas bağlantı ve şema dosyaları `.gitignore` ile korunur; repoda yalnızca güvenli `profiles.example.json` şablonu yer alır.
-- **Uzak Ağ SSL/TLS Kalkanı:** Uzak sunuculara şifresiz bağlanılmak istendiğinde kullanıcıyı uyararak `require` modunu teşvik eder.
+- **Git Sızıntı Kalkanı:** Hassas bağlantı ve şema dosyaları `.gitignore` ile korunur.
 
-### 7. 🎨 macOS Native Koyu / Açık Tema (`FlatMacDarkLaf`)
-- macOS standartlarında pürüzsüz **Karanlık (Dark)** ve **Açık (Light)** tema desteği.
-- **Tercih Kalıcılığı (Persistence):** Uygulamayı kapattığınız temayı hatırlar ve bir sonraki açılışta doğrudan o temayla başlar.
+### 8. 🎨 Çok Platformlu Yerel Tema Desteği
+- macOS için `FlatMacDarkLaf` / `FlatMacLightLaf`, Windows ve Linux için `FlatDarkLaf` / `FlatLightLaf`.
+- İşletim sisteminizin açık/koyu temasını otomatik senkronize eder.
 
 ---
 
@@ -60,27 +80,30 @@
 
 ---
 
-## 🛠️ Kurulum ve Çalıştırma
+## 🛠️ Platformlara Göre Başlatma
 
-### Gereksinimler
-- Java JDK 17+ (macOS Apple Silicon / Intel, Linux, Windows)
-- Apache Maven 3.8+ (Kaynak koddan derlemek için)
+### 🍏 macOS
+Masaüstündeki **`PostgreSQL DDL Studio.app`** simgesine veya `.dmg` dosyasından yüklenen uygulamaya çift tıklayarak başlatabilirsiniz.
 
-### 1. Kaynak Koddan Derleme
+### 🪟 Windows
+İndirdiğiniz `.zip` arşivini açın ve:
+- **`PostgreSQL-DDL-Studio.vbs`** dosyasına çift tıklayarak konsol penceresi olmadan doğrudan başlatabilirsiniz.
+- veya **`PostgreSQL-DDL-Studio.bat`** dosyasını çalıştırabilirsiniz.
+
+### 🐧 Linux
+İndirdiğiniz `.tar.gz` arşivini açın ve terminalden:
 ```bash
-mvn clean package
+chmod +x run.sh
+./run.sh
 ```
 
-### 2. Konsol Modunda Çalıştırma (CLI)
+### ☕ Komut Satırı (CLI) Modu
 ```bash
-java -jar target/postgres_ddl_export_console_java-1.0.0.jar -db:POSTGRESQL -od:./export_output -s:profiles.json
+java -jar PostgreSQL-DDL-Studio.jar -db:POSTGRESQL -od:./export_output -s:profiles.json
 ```
-
-### 3. macOS Native Uygulama Olarak Çalıştırma (.app)
-Masaüstündeki **`PostgreSQL DDL Studio.app`** simgesine çift tıklayarak yerel macOS penceresi olarak başlatabilirsiniz.
 
 ---
 
 ## 📄 Lisans
 
-Bu proje MIT lisansı ile korunmaktadır.
+Bu proje MIT lisansı ile korunmaktadır. Devran Sever tarafından geliştirilmiştir.
