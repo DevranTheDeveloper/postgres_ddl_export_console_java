@@ -106,7 +106,7 @@ public class ServerStatusPanel extends JPanel {
         controls.add(lastUpdateLabel);
         controls.add(autoRefreshBox);
 
-        JButton dockerWizardBtn = new JButton("Docker Asistanı");
+        JButton dockerWizardBtn = new JButton("Hızlı Başlangıç & Kurulum");
         dockerWizardBtn.setFont(dockerWizardBtn.getFont().deriveFont(Font.BOLD, 12f));
         dockerWizardBtn.addActionListener(e -> openDockerWizard());
         controls.add(dockerWizardBtn);
@@ -335,7 +335,7 @@ public class ServerStatusPanel extends JPanel {
     public void openDockerWizard() {
         Window ancestor = SwingUtilities.getWindowAncestor(this);
         Frame ownerFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
-        DockerWizardDialog dialog = new DockerWizardDialog(ownerFrame,
+        UniversalDatabaseHubDialog dialog = new UniversalDatabaseHubDialog(ownerFrame,
                 newSettings -> {
                     if (onSettingsUpdate != null) {
                         onSettingsUpdate.accept(newSettings);

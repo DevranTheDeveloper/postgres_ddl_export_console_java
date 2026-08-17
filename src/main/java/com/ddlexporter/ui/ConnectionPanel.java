@@ -159,15 +159,16 @@ public class ConnectionPanel extends JPanel {
         JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bottomBar.setOpaque(false);
 
-        JButton dockerAssistantBtn = new JButton("Docker Asistanı");
-        dockerAssistantBtn.setPreferredSize(new Dimension(140, 30));
-        dockerAssistantBtn.addActionListener(e -> {
+        JButton databaseHubBtn = new JButton("Hızlı Başlangıç Asistanı");
+        databaseHubBtn.setPreferredSize(new Dimension(170, 30));
+        databaseHubBtn.setFont(databaseHubBtn.getFont().deriveFont(Font.BOLD, 12f));
+        databaseHubBtn.addActionListener(e -> {
             Window ancestor = SwingUtilities.getWindowAncestor(this);
             Frame owner = (ancestor instanceof Frame) ? (Frame) ancestor : null;
-            DockerWizardDialog dialog = new DockerWizardDialog(owner, this::applySettings, this::testConnection);
+            UniversalDatabaseHubDialog dialog = new UniversalDatabaseHubDialog(owner, this::applySettings, this::testConnection);
             dialog.setVisible(true);
         });
-        bottomBar.add(dockerAssistantBtn);
+        bottomBar.add(databaseHubBtn);
 
         openFolderBtn.setPreferredSize(new Dimension(140, 30));
         openFolderBtn.addActionListener(e -> openOutputFolder());

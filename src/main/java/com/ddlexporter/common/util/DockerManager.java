@@ -30,8 +30,16 @@ public class DockerManager {
         @Override
         public String toString() {
             String state = isRunning ? "Aktif" : "Durduruldu";
-            String portInfo = ports.isBlank() ? "Port: 5432" : ports;
-            return name + " (" + state + " • " + portInfo + ")";
+            String portInfo = "5432";
+            if (ports != null && ports.contains("->")) {
+                try {
+                    String pStr = ports.split("->")[0];
+                    if (pStr.contains(":")) {
+                        portInfo = pStr.substring(pStr.lastIndexOf(":") + 1).trim();
+                    }
+                } catch (Exception ignored) {}
+            }
+            return name + " (" + state + " • Port " + portInfo + ")";
         }
     }
 
