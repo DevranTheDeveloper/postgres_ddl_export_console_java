@@ -23,11 +23,33 @@ public class JsonConfigurationReader implements IConfigurationReader {
     @Override
     public <T> T read(Class<T> clazz) {
         try {
+            com.fasterxml.jackson.databind.JsonNode rootNode;
             File file = new File(jsonContentOrPath);
             if (file.exists() && file.isFile()) {
-                return mapper.readValue(file, clazz);
+                rootNode = mapper.readTree(file);
+            } else {
+                rootNode = mapper.readTree(jsonContentOrPath);
             }
-            return mapper.readValue(jsonContentOrPath, clazz);
+
+            if (clazz.equals(com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings.class)
+                    && rootNode.has("profiles") && rootNode.get("profiles").isArray()) {
+                String activeName = rootNode.has("activeProfile") ? rootNode.get("activeProfile").asText() : null;
+                com.fasterxml.jackson.databind.JsonNode selectedNode = null;
+                for (com.fasterxml.jackson.databind.JsonNode pNode : rootNode.get("profiles")) {
+                    if (activeName != null && activeName.equals(pNode.path("name").asText())) {
+                        selectedNode = pNode;
+                        break;
+                    }
+                }
+                if (selectedNode == null && rootNode.get("profiles").size() > 0) {
+                    selectedNode = rootNode.get("profiles").get(0);
+                }
+                if (selectedNode != null) {
+                    return mapper.treeToValue(selectedNode, clazz);
+                }
+            }
+
+            return mapper.treeToValue(rootNode, clazz);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read JSON configuration: " + e.getMessage(), e);
         }
