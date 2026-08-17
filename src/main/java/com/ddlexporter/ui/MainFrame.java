@@ -311,6 +311,19 @@ public class MainFrame extends JFrame {
         }
     }
 
+    public static boolean isSystemDarkMode() {
+        try {
+            Process p = new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start();
+            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()))) {
+                String line = reader.readLine();
+                if ("Dark".equalsIgnoreCase(line)) {
+                    return true;
+                }
+            }
+        } catch (Exception ignored) {}
+        return false;
+    }
+
     private static boolean loadSavedThemePreference() {
         try {
             File f = new File(PREF_FILE);
@@ -323,7 +336,7 @@ public class MainFrame extends JFrame {
                 }
             }
         } catch (Exception ignored) {}
-        return true;
+        return isSystemDarkMode();
     }
 
     private static void saveThemePreference(boolean dark) {
