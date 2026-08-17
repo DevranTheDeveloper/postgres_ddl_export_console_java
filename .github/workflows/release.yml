@@ -1,0 +1,105 @@
+name: Build & Publish Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Fat JAR with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Create macOS App & DMG Installer
+        run: |
+          APP_DIR="PostgreSQL DDL Studio.app"
+          mkdir -p "$APP_DIR/Contents/MacOS"
+          mkdir -p "$APP_DIR/Contents/Resources"
+          
+          # Copy icon and JAR
+          cp src/main/resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
+          cp target/postgres_ddl_export_console_java-1.0.0.jar "$APP_DIR/Contents/MacOS/app.jar"
+          
+          # Simple bash launcher
+          cat << 'EOF' > "$APP_DIR/Contents/MacOS/launcher"
+          #!/bin/bash
+          DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+          java -Xdock:name="PostgreSQL DDL Studio" -jar "$DIR/app.jar"
+          EOF
+          chmod 755 "$APP_DIR/Contents/MacOS/launcher"
+          
+          # Info.plist
+          cat << 'EOF' > "$APP_DIR/Contents/Info.plist"
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>CFBundleName</key>
+              <string>PostgreSQL DDL Studio</string>
+              <key>CFBundleDisplayName</key>
+              <string>PostgreSQL DDL Studio</string>
+              <key>CFBundleIdentifier</key>
+              <string>com.ddlexporter.app</string>
+              <key>CFBundleVersion</key>
+              <string>5.2.0</string>
+              <key>CFBundleShortVersionString</key>
+              <string>5.2.0</string>
+              <key>CFBundlePackageType</key>
+              <string>APPL</string>
+              <key>CFBundleExecutable</key>
+              <string>launcher</string>
+              <key>CFBundleIconFile</key>
+              <string>AppIcon</string>
+          </dict>
+          </plist>
+          EOF
+          
+          # Staging DMG
+          STAGING="dmg_staging"
+          mkdir -p "$STAGING"
+          cp -R "$APP_DIR" "$STAGING/"
+          ln -s /Applications "$STAGING/Applications"
+          hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "PostgreSQL-DDL-Studio-5.2.0-macOS.dmg"
+          rm -rf "$STAGING"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: "PostgreSQL DDL Studio ${{ github.ref_name }} (Enterprise Edition)"
+          body: |
+            ## 🚀 PostgreSQL DDL Studio ${{ github.ref_name }} Yayında!
+            
+            ### ✨ Öne Çıkan Özellikler:
+            - **📂 İnteraktif Şema Gezgini:** Hiyerarşik ağaç, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme.
+            - **🗺️ Görsel ERD Haritası:** Panning, zooming (%20-%300), sürüklenebilir tablo kartları, Bézier ilişkileri, Mermaid ve PNG dışa aktarma.
+            - **🌐 Canlı Ortam Karşılaştırma (Diff):** Staging vs Production fark tespiti, otomatik dağıtım yaması (Deploy Patch) üretimi ve veri kaybı koruması.
+            - **📊 Canlı Sunucu Durumu & Performans:** Bağlantı havuzu, toplam boyut, önbellek verimliliği (%99+), Java2D grafikleri ve sistem teşhisi.
+            - **⏱️ Otomatik Zamanlanmış Yedekleme (Cron):** Arka planda sessiz DDL yedekleme, otomatik Git commit ve durdurma/başlatma kontrolü.
+            - **🛡️ Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve uzak SSL MitM koruması.
+            - **🎨 macOS Native Koyu / Açık Tema:** İşletim sistemiyle otomatik senkronize olan FlatMacDarkLaf arayüzü.
+            
+            ---
+            ### 📥 İndirme Bağlantıları:
+            - **macOS (.dmg):** `PostgreSQL-DDL-Studio-5.2.0-macOS.dmg`
+            - **Evrensel JAR (Windows, Linux, Mac):** `postgres_ddl_export_console_java-1.0.0.jar`
+          files: |
+            PostgreSQL-DDL-Studio-5.2.0-macOS.dmg
+            target/postgres_ddl_export_console_java-1.0.0.jar
+          draft: false
+          prerelease: false
