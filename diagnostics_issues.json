@@ -1,1 +1,11 @@
-[ ]
+[ {
+  "id" : "0531bb53",
+  "timestamp" : "2026-08-17 09:42:11",
+  "level" : "ERROR",
+  "title" : "Veritabanı Sunucusuna Bağlanılamadı",
+  "source" : "JDBC Sürücüsü",
+  "details" : "Sunucu adresi veya kimlik bilgileri doğrulanamadı:\nBağlantı denemesi başarısız oldu.",
+  "suggestion" : "PostgreSQL servisinin çalıştığından ve şifrenin doğruluğundan emin olun.",
+  "resolved" : false,
+  "resolvedAt" : null
+} ]
