@@ -106,6 +106,7 @@ public class ScheduledBackupDialog extends JDialog {
         // 3. Footer Buttons
         JPanel footer = new JPanel(new BorderLayout());
 
+        JPanel leftButtons = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         JButton runNowBtn = new JButton("Şimdi Çalıştır (Manuel)");
         runNowBtn.setFont(runNowBtn.getFont().deriveFont(Font.BOLD, 11f));
         runNowBtn.addActionListener(e -> {
@@ -115,10 +116,18 @@ public class ScheduledBackupDialog extends JDialog {
                     "Başlatıldı", JOptionPane.INFORMATION_MESSAGE);
             loadConfigToUi();
         });
-        footer.add(runNowBtn, BorderLayout.WEST);
+        leftButtons.add(runNowBtn);
+
+        JButton stopBtn = new JButton("Zamanlayıcıyı Durdur");
+        stopBtn.setFont(stopBtn.getFont().deriveFont(Font.BOLD, 11f));
+        stopBtn.setForeground(new Color(220, 38, 38));
+        stopBtn.addActionListener(e -> stopSchedulerAction());
+        leftButtons.add(stopBtn);
+
+        footer.add(leftButtons, BorderLayout.WEST);
 
         JPanel rightButtons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
-        JButton saveBtn = new JButton("Kaydet & Uygula");
+        JButton saveBtn = new JButton("Kaydet & Başlat");
         saveBtn.setFont(saveBtn.getFont().deriveFont(Font.BOLD, 12f));
         saveBtn.setForeground(new Color(22, 163, 74));
         saveBtn.addActionListener(e -> saveAndApply());
@@ -133,6 +142,17 @@ public class ScheduledBackupDialog extends JDialog {
 
         setContentPane(mainPanel);
         loadConfigToUi();
+    }
+
+    private void stopSchedulerAction() {
+        scheduleManager.stopScheduler();
+        loadConfigToUi();
+        if (onConfigChanged != null) {
+            onConfigChanged.run();
+        }
+        JOptionPane.showMessageDialog(this,
+                "Otomatik zamanlanmış DDL yedekleme durduruldu ve kapatıldı!",
+                "Durduruldu", JOptionPane.INFORMATION_MESSAGE);
     }
 
     private void populateProfiles() {

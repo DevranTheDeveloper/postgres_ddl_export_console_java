@@ -107,6 +107,15 @@ public class ScheduledBackupManager {
         }
     }
 
+    public synchronized void stopScheduler() {
+        config.enabled = false;
+        saveConfig();
+        if (currentTask != null && !currentTask.isDone()) {
+            currentTask.cancel(false);
+        }
+        log("[ZAMANLAYICI] Otomatik DDL yedekleme durduruldu ve kapatıldı.");
+    }
+
     public void runNow() {
         scheduler.execute(this::runScheduledBackup);
     }
