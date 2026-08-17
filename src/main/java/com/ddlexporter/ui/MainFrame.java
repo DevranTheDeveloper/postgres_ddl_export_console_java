@@ -78,6 +78,10 @@ public class MainFrame extends JFrame {
         schemaExplorerPanel = new SchemaExplorerPanel();
         erDiagramPanel = new ErDiagramPanel();
         serverStatusPanel = new ServerStatusPanel(connectionPanel::getSettingsFromUi, auditManager, diagnosticsManager);
+        serverStatusPanel.setOnSettingsUpdate(s -> {
+            connectionPanel.applySettings(s);
+            connectionPanel.testConnection();
+        });
         diffViewerPanel = new DiffViewerPanel(profileManager);
         gitSyncPanel = new GitSyncPanel();
         logPanel = new LogPanel();

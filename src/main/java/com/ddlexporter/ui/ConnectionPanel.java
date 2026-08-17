@@ -158,6 +158,17 @@ public class ConnectionPanel extends JPanel {
         // --- BOTTOM BAR: Hızlı Yardımcı Araçlar ---
         JPanel bottomBar = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         bottomBar.setOpaque(false);
+
+        JButton dockerAssistantBtn = new JButton("Docker Asistanı");
+        dockerAssistantBtn.setPreferredSize(new Dimension(140, 30));
+        dockerAssistantBtn.addActionListener(e -> {
+            Window ancestor = SwingUtilities.getWindowAncestor(this);
+            Frame owner = (ancestor instanceof Frame) ? (Frame) ancestor : null;
+            DockerWizardDialog dialog = new DockerWizardDialog(owner, this::applySettings, this::testConnection);
+            dialog.setVisible(true);
+        });
+        bottomBar.add(dockerAssistantBtn);
+
         openFolderBtn.setPreferredSize(new Dimension(140, 30));
         openFolderBtn.addActionListener(e -> openOutputFolder());
         bottomBar.add(openFolderBtn);
@@ -219,7 +230,7 @@ public class ConnectionPanel extends JPanel {
         }
     }
 
-    private void testConnection() {
+    public void testConnection() {
         PostgresqlConfigurationSettings settings = getSettingsFromUi();
         String url = String.format("jdbc:postgresql://%s:%d/%s",
                 settings.getServerHost(), settings.getPort(), settings.getDatabaseName());
@@ -326,6 +337,16 @@ public class ConnectionPanel extends JPanel {
                 JOptionPane.showMessageDialog(this, "ZIP oluşturma hatası: " + ex.getMessage(), "Hata", JOptionPane.ERROR_MESSAGE);
             }
         }
+    }
+
+    public void applySettings(PostgresqlConfigurationSettings settings) {
+        if (settings == null) return;
+        if (settings.getServerHost() != null) hostField.setText(settings.getServerHost());
+        if (settings.getPort() > 0) portField.setText(String.valueOf(settings.getPort()));
+        if (settings.getDatabaseName() != null) dbNameField.setText(settings.getDatabaseName());
+        if (settings.getUsername() != null) userField.setText(settings.getUsername());
+        if (settings.getPassword() != null) passField.setText(settings.getPassword());
+        if (settings.getSchema() != null) schemaField.setText(settings.getSchema());
     }
 
     public void setExporting(boolean exporting) {

@@ -106,6 +106,11 @@ public class ServerStatusPanel extends JPanel {
         controls.add(lastUpdateLabel);
         controls.add(autoRefreshBox);
 
+        JButton dockerWizardBtn = new JButton("Docker Asistanı");
+        dockerWizardBtn.setFont(dockerWizardBtn.getFont().deriveFont(Font.BOLD, 12f));
+        dockerWizardBtn.addActionListener(e -> openDockerWizard());
+        controls.add(dockerWizardBtn);
+
         testModeBtn.setFont(testModeBtn.getFont().deriveFont(Font.BOLD, 12f));
         testModeBtn.addActionListener(e -> toggleSimulationTest());
         controls.add(testModeBtn);
@@ -124,7 +129,7 @@ public class ServerStatusPanel extends JPanel {
         cardsGrid.setOpaque(false);
         cardsGrid.setPreferredSize(new Dimension(0, 85));
 
-        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel, null));
+        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel, this::openDockerWizard));
         cardsGrid.add(createKpiCard("Aktif Bağlantılar", connectionsValueLabel, new JLabel("Havuz Kapasitesi"), null));
         cardsGrid.add(createKpiCard("Veritabanı Boyutu", dbSizeValueLabel, new JLabel("Toplam Disk Alanı"), null));
         cardsGrid.add(createKpiCard("Cache Hit (Önbellek)", cacheHitValueLabel, txStatsLabel, null));
@@ -319,6 +324,25 @@ public class ServerStatusPanel extends JPanel {
         }
 
         return card;
+    }
+
+    private java.util.function.Consumer<PostgresqlConfigurationSettings> onSettingsUpdate;
+
+    public void setOnSettingsUpdate(java.util.function.Consumer<PostgresqlConfigurationSettings> onSettingsUpdate) {
+        this.onSettingsUpdate = onSettingsUpdate;
+    }
+
+    public void openDockerWizard() {
+        Window ancestor = SwingUtilities.getWindowAncestor(this);
+        Frame ownerFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
+        DockerWizardDialog dialog = new DockerWizardDialog(ownerFrame,
+                newSettings -> {
+                    if (onSettingsUpdate != null) {
+                        onSettingsUpdate.accept(newSettings);
+                    }
+                },
+                this::refreshMetrics);
+        dialog.setVisible(true);
     }
 
     private void openDiagnosticsDialog() {
