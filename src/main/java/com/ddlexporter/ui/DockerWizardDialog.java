@@ -28,14 +28,15 @@ public class DockerWizardDialog extends JDialog {
         this.onConnectCallback = onConnectCallback;
         this.onRefreshCallback = onRefreshCallback;
 
-        setSize(580, 520);
+        setSize(620, 560);
+        setMinimumSize(new Dimension(540, 460));
         setLocationRelativeTo(owner);
-        setLayout(new BorderLayout(12, 12));
-        setResizable(false);
+        setLayout(new BorderLayout(0, 0));
+        setResizable(true);
 
         JPanel mainPanel = new JPanel();
         mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
-        mainPanel.setBorder(BorderFactory.createEmptyBorder(16, 18, 16, 18));
+        mainPanel.setBorder(BorderFactory.createEmptyBorder(14, 16, 14, 16));
 
         // 1. Docker Engine Status Header
         JPanel statusCard = new JPanel(new BorderLayout(8, 8));
@@ -50,7 +51,7 @@ public class DockerWizardDialog extends JDialog {
         refreshDockerBtn.addActionListener(e -> scanDockerContainers());
         statusCard.add(refreshDockerBtn, BorderLayout.EAST);
         mainPanel.add(statusCard);
-        mainPanel.add(Box.createVerticalStrut(12));
+        mainPanel.add(Box.createVerticalStrut(10));
 
         // 2. Existing Containers Section
         JPanel existingCard = new JPanel(new BorderLayout(8, 8));
@@ -73,7 +74,7 @@ public class DockerWizardDialog extends JDialog {
         existingCard.add(existingBtnRow, BorderLayout.SOUTH);
 
         mainPanel.add(existingCard);
-        mainPanel.add(Box.createVerticalStrut(12));
+        mainPanel.add(Box.createVerticalStrut(10));
 
         // 3. Create New Container Section
         JPanel createCard = new JPanel(new BorderLayout(8, 8));
@@ -99,7 +100,7 @@ public class DockerWizardDialog extends JDialog {
         createCard.add(createBtnRow, BorderLayout.SOUTH);
 
         mainPanel.add(createCard);
-        mainPanel.add(Box.createVerticalStrut(12));
+        mainPanel.add(Box.createVerticalStrut(10));
 
         // 4. Seed Data Section
         JPanel seedCard = new JPanel(new BorderLayout(8, 8));
@@ -117,10 +118,14 @@ public class DockerWizardDialog extends JDialog {
 
         mainPanel.add(seedCard);
 
-        add(mainPanel, BorderLayout.CENTER);
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        add(scrollPane, BorderLayout.CENTER);
 
         // Close button footer
-        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 10));
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.RIGHT, 12, 8));
         JButton closeBtn = new JButton("Kapat");
         closeBtn.addActionListener(e -> dispose());
         footer.add(closeBtn);
