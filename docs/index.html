@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="tr" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PostgreSQL DDL Studio - Profesyonel Veritabanı & Şema Yönetim Stüdyosu</title>
+  <meta name="description" content="PostgreSQL için interaktif şema gezgini, canlı ERD ilişki haritası, staging vs prod fark motoru, otomatik yedekleme ve canlı metrikler sunan profesyonel masaüstü stüdyo.">
+  <link rel="icon" type="image/png" href="assets/logo.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="glow-bg"></div>
+
+  <div class="container">
+    <!-- Navbar -->
+    <header class="navbar">
+      <a href="#" class="brand">
+        <img src="assets/logo.png" alt="PostgreSQL DDL Studio Logo" class="brand-icon">
+        <span>PostgreSQL DDL Studio</span>
+      </a>
+
+      <nav class="nav-links">
+        <a href="#features" class="nav-link">Özellikler</a>
+        <a href="#mockup" class="nav-link">Önizleme</a>
+        <a href="#download" class="nav-link">İndir</a>
+        <a href="https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java" target="_blank" class="nav-link">GitHub ↗</a>
+        <button id="themeToggle" class="theme-toggle">Açık Tema</button>
+      </nav>
+    </header>
+
+    <!-- Hero Section -->
+    <section class="hero">
+      <div class="badge">
+        <span>v5.2.0 Kurumsal Sürüm Yayında</span>
+      </div>
+
+      <h1 class="hero-title">
+        PostgreSQL Şema & DDL Yönetiminin <br>
+        <span class="grad-text">Yeni Nesil Stüdyosu</span>
+      </h1>
+
+      <p class="hero-subtitle">
+        İnteraktif SQL gezgini, canlı ERD ilişki haritaları, Staging vs Production şema farkı (Diff) motoru, arka plan zamanlanmış yedekleme ve canlı sunucu performansı — hepsi tek bir modern masaüstü uygulamasında.
+      </p>
+
+      <div class="cta-group">
+        <a href="https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest" class="btn-primary" id="downloadDmgBtn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 3.5c.61-.75 1.04-1.8 0.93-2.85-.9.04-2 .6-2.65 1.35-.58.66-1.09 1.73-.95 2.76 1.01.08 2.05-.51 2.67-1.26z"/></svg>
+          macOS İçin İndir (.dmg)
+        </a>
+        <a href="#download" class="btn-secondary">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Evrensel JAR (.jar)
+        </a>
+      </div>
+
+      <!-- Quick Run CLI Banner -->
+      <div class="cli-box">
+        <span class="cli-code">java -jar postgres_ddl_export_console_java-1.0.0.jar -db:POSTGRESQL</span>
+        <button id="copyCliBtn" class="copy-btn">Kopyala</button>
+      </div>
+    </section>
+
+    <!-- Interactive Mockup Section -->
+    <section class="mockup-container" id="mockup">
+      <div class="mockup-header">
+        <div class="mockup-dots">
+          <div class="dot dot-red"></div>
+          <div class="dot dot-yellow"></div>
+          <div class="dot dot-green"></div>
+        </div>
+        <div class="mockup-tabs">
+          <button class="tab-btn active" data-tab="tab-erd">İlişki Haritası (ERD)</button>
+          <button class="tab-btn" data-tab="tab-diff">Şema Farkı (Diff)</button>
+          <button class="tab-btn" data-tab="tab-metrics">Sunucu Durumu</button>
+          <button class="tab-btn" data-tab="tab-schema">SQL Gezgini</button>
+        </div>
+        <div style="width: 50px;"></div>
+      </div>
+
+      <div class="mockup-body">
+        <!-- Tab 1: ERD -->
+        <div class="tab-content active" id="tab-erd">
+          <div style="display: flex; gap: 20px; align-items: center; justify-content: center; min-height: 320px; background: rgba(0,0,0,0.2); border-radius: 12px; border: 1px dashed var(--border-color); padding: 30px;">
+            <div style="background: var(--bg-secondary); border: 1px solid var(--accent-blue); border-radius: 10px; padding: 14px; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div style="font-weight: 700; color: #38bdf8; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">📁 public.customers</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
+                <div>🔑 customer_id <span style="color:#f59e0b;">(PK)</span></div>
+                <div>full_name (varchar)</div>
+                <div>email (varchar)</div>
+              </div>
+            </div>
+
+            <div style="color: var(--accent-blue); font-weight: bold; font-size: 1.4rem;">━━━━━►</div>
+
+            <div style="background: var(--bg-secondary); border: 1px solid var(--border-color); border-radius: 10px; padding: 14px; width: 220px; box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+              <div style="font-weight: 700; color: #38bdf8; font-size: 0.9rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; margin-bottom: 8px;">📁 public.orders</div>
+              <div style="font-size: 0.8rem; color: var(--text-secondary); line-height: 1.8;">
+                <div>🔑 order_id <span style="color:#f59e0b;">(PK)</span></div>
+                <div>🔗 customer_id <span style="color:#06b6d4;">(FK)</span></div>
+                <div>total_amount (numeric)</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: Diff -->
+        <div class="tab-content" id="tab-diff">
+          <div style="background: rgba(0,0,0,0.2); border-radius: 12px; padding: 24px; font-family: monospace; font-size: 0.9rem;">
+            <div style="color: #10b981; margin-bottom: 8px;">+ CREATE TABLE public.payments (payment_id SERIAL PRIMARY KEY, amount NUMERIC);</div>
+            <div style="color: #ef4444; margin-bottom: 8px;">- ALTER TABLE public.users DROP COLUMN legacy_phone;</div>
+            <div style="color: #38bdf8;">-- Otomatik Üretilen Yamayı [ deploy_patch_to_prod.sql ] Olarak Kaydet</div>
+          </div>
+        </div>
+
+        <!-- Tab 3: Metrics -->
+        <div class="tab-content" id="tab-metrics">
+          <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px;">
+            <div style="background: var(--bg-secondary); padding: 18px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Önbellek Verimliliği</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">%99.8</div>
+            </div>
+            <div style="background: var(--bg-secondary); padding: 18px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Aktif Bağlantılar</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #38bdf8;">1 / 100</div>
+            </div>
+            <div style="background: var(--bg-secondary); padding: 18px; border-radius: 10px; border: 1px solid var(--border-color);">
+              <div style="font-size: 0.8rem; color: var(--text-muted);">Sistem Sağlığı</div>
+              <div style="font-size: 1.8rem; font-weight: 800; color: #10b981;">Kusursuz</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 4: SQL -->
+        <div class="tab-content" id="tab-schema">
+          <div style="background: #090d16; padding: 20px; border-radius: 10px; font-family: monospace; font-size: 0.85rem; color: #f8fafc; line-height: 1.7;">
+            <span style="color: #6366f1;">CREATE TABLE</span> <span style="color: #38bdf8;">public.products</span> (<br>
+            &nbsp;&nbsp;product_id <span style="color: #f59e0b;">SERIAL PRIMARY KEY</span>,<br>
+            &nbsp;&nbsp;title <span style="color: #10b981;">VARCHAR(150) NOT NULL</span>,<br>
+            &nbsp;&nbsp;price <span style="color: #10b981;">NUMERIC(10, 2) NOT NULL</span><br>
+            );
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+      <div class="section-header">
+        <h2 class="section-title">Geliştiriciler İçin Tasarlandı</h2>
+        <p class="section-subtitle">Veritabanı geliştirme ve sürümleme süreçlerinizi hızlandıracak modern araç takımı.</p>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon-box">📂</div>
+          <h3 class="feature-title">İnteraktif Şema Gezgini</h3>
+          <p class="feature-desc">Tüm PostgreSQL şema ve nesnelerini hiyerarşik ağaç görünümünde listeler, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme imkanı sunar.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🗺️</div>
+          <h3 class="feature-title">Görsel ERD Haritası</h3>
+          <p class="feature-desc">Tablolarınız arasındaki Foreign Key ilişkilerini yumuşak Bézier eğrileriyle çizer. Yakınlaştırma, taşıma, PNG ve Mermaid Markdown çıktısı alabilirsiniz.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🌐</div>
+          <h3 class="feature-title">Staging vs Prod Şema Farkı</h3>
+          <p class="feature-desc">İki canlı veritabanını yan yana kıyaslayıp eksik nesneleri tespit eder. Hedefe uygulanacak SQL dağıtım yamasını (Deploy Patch) anında oluşturur.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">📊</div>
+          <h3 class="feature-title">Canlı Sunucu Durumu & Metrikler</h3>
+          <p class="feature-desc">Aktif oturumlar, bellek/disk kullanımı, önbellek oranları (%99+) ve işlem geçmişini Java2D grafikleriyle canlı izleyin.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">⏱️</div>
+          <h3 class="feature-title">Zamanlanmış Otomatik Yedekleme</h3>
+          <p class="feature-desc">Belirlediğiniz aralıklarla (15 dk, 1 saat, 24 saat) arka planda otomatik DDL yedeği alır ve isteğe bağlı olarak doğrudan Git deposuna commitler.</p>
+        </div>
+
+        <div class="feature-card">
+          <div class="feature-icon-box">🛡️</div>
+          <h3 class="feature-title">AES-256 GCM Güvenlik Kalkanı</h3>
+          <p class="feature-desc">Kayıtlı profiller ve şifreler diskte asla düz metin saklanmaz. AES-256 GCM ile şifrelenir, Git sızıntılarına ve ağ dinleme (MitM) risklerine karşı korunur.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Download Section -->
+    <section class="download-section" id="download">
+      <div class="section-header">
+        <h2 class="section-title">Hemen İndirin ve Kullanmaya Başlayın</h2>
+        <p class="section-subtitle">Ücretsiz, açık kaynaklı ve tüm işletim sistemlerinde çalışır.</p>
+      </div>
+
+      <div class="download-cards">
+        <div class="download-card">
+          <div class="dl-platform">🍏 macOS (.dmg)</div>
+          <div class="dl-version">v5.2.0 • Apple Silicon & Intel</div>
+          <a href="https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest" class="btn-primary" style="width: 100%; justify-content: center;">
+            DMG İndir
+          </a>
+        </div>
+
+        <div class="download-card">
+          <div class="dl-platform">☕ Evrensel JAR (.jar)</div>
+          <div class="dl-version">v5.2.0 • Windows, Linux, Mac (Java 17+)</div>
+          <a href="https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest" class="btn-secondary" style="width: 100%; justify-content: center;">
+            JAR İndir
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>PostgreSQL DDL Studio • MIT Lisansı ile korunmaktadır. Devran Sever tarafından geliştirilmiştir.</p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
