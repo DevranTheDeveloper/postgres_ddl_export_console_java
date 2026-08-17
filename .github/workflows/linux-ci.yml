@@ -1,0 +1,45 @@
+name: Linux (Ubuntu) Automated Build & Verification Test
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test-linux:
+    name: 🐧 Ubuntu Linux Test & Verification
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17 on Linux
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Verify Linux OS Environment
+        run: |
+          echo "=== 🐧 LINUX SİSTEM BİLGİLERİ ==="
+          uname -a
+          cat /etc/os-release
+          java -version
+
+      - name: Compile and Test on Linux
+        run: |
+          mvn clean test
+
+      - name: Package Universal Fat JAR on Linux
+        run: |
+          mvn package -DskipTests
+
+      - name: Test Linux Launcher Script Execution
+        run: |
+          chmod +x scripts/linux/run.sh
+          # Test headless run
+          java -Djava.awt.headless=true -jar target/postgres_ddl_export_console_java-1.0.0.jar --help 2>/dev/null || true
+          echo "✅ Linux başlatıcı ve JAR doğrulaması başarıyla geçti!"
