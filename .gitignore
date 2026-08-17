@@ -1,8 +1,44 @@
+# Build & Binary Artifacts
 target/
 *.class
+*.jar
+*.war
+*.ear
+
+# IDE & Editor Configuration
 .idea/
 *.iml
 .settings/
 .classpath
 .project
+.vscode/
+
+# macOS / OS Metadata
 .DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Sensitive Local Secrets & Credentials (NEVER COMMIT)
+profiles.json
+postgresql_settings.json
+user_preferences.json
+audit_history.json
+diagnostics_issues.json
+scheduled_backup_config.json
+
+# Local Schema Exports & Generated Archives
+export_output/
+database_schemas/
+*.zip
+*.tar.gz
+*.sql.bak
+schema_erd_diagram.png
+deploy_patch_to_prod.sql
+
+# Log Files
+*.log
+logs/

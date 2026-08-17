@@ -452,6 +452,26 @@ public class DiffViewerPanel extends JPanel {
     private void exportSqlToFile(String text, String defaultFilename) {
         if (text == null || text.isBlank()) return;
 
+        // Security / Safety Check for Destructive DDL Operations
+        String upperText = text.toUpperCase();
+        boolean hasDrop = upperText.contains("DROP TABLE") || upperText.contains("DROP COLUMN") || upperText.contains("DROP DATABASE");
+        boolean hasTruncate = upperText.contains("TRUNCATE ");
+        boolean hasCascade = upperText.contains("CASCADE");
+
+        if (hasDrop || hasTruncate || hasCascade) {
+            StringBuilder warning = new StringBuilder("GÜVENLİK UYARISI: Bu SQL scripti veri kaybına yol açabilecek komutlar içeriyor:\n");
+            if (hasDrop) warning.append("- DROP komutları (Tablo/Sütun silme)\n");
+            if (hasTruncate) warning.append("- TRUNCATE komutları (Tüm veriyi boşaltma)\n");
+            if (hasCascade) warning.append("- CASCADE komutları (Bağımlı nesneleri zincirleme silme)\n");
+            warning.append("\nBu betiği canlı veritabanında çalıştırmadan önce tam yedek almanız önerilir.\nYine de kaydetmek istiyor musunuz?");
+
+            int confirm = JOptionPane.showConfirmDialog(this, warning.toString(), "Kritik Veri Kaybı Uyarısı",
+                    JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (confirm != JOptionPane.YES_OPTION) {
+                return;
+            }
+        }
+
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setSelectedFile(new File(defaultFilename));
         int res = fileChooser.showSaveDialog(this);

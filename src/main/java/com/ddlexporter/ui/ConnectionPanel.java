@@ -246,12 +246,24 @@ public class ConnectionPanel extends JPanel {
                 testBtn.setText("Bağlantıyı Test Et");
                 try {
                     if (get()) {
-                        JOptionPane.showMessageDialog(ConnectionPanel.this,
-                                "PostgreSQL Veritabanı Bağlantısı Başarılı!",
-                                "Bağlantı Başarılı (Onay)", JOptionPane.INFORMATION_MESSAGE);
+                        boolean isRemote = !settings.getServerHost().equalsIgnoreCase("localhost")
+                                && !settings.getServerHost().equals("127.0.0.1")
+                                && !settings.getServerHost().equals("::1");
+                        String ssl = (String) sslModeBox.getSelectedItem();
+                        if (isRemote && ("disable".equalsIgnoreCase(ssl) || "prefer".equalsIgnoreCase(ssl))) {
+                            JOptionPane.showMessageDialog(ConnectionPanel.this,
+                                    "PostgreSQL Veritabanı Bağlantısı Başarılı!\n\n"
+                                            + "Güvenlik Tavsiyesi: Uzak sunucuya '" + ssl + "' SSL modu ile bağlanıyorsunuz.\n"
+                                            + "Üretim ortamlarında ağ dinleme (MitM) risklerine karşı 'require' veya 'verify-full' modu önerilir.",
+                                    "Bağlantı Başarılı (Güvenlik Tavsiyesi)", JOptionPane.WARNING_MESSAGE);
+                        } else {
+                            JOptionPane.showMessageDialog(ConnectionPanel.this,
+                                    "PostgreSQL Veritabanı Bağlantısı Başarılı!\nAktif Bağlantı ve SSL Durumu Doğrulandı.",
+                                    "Bağlantı Başarılı", JOptionPane.INFORMATION_MESSAGE);
+                        }
                     } else {
                         JOptionPane.showMessageDialog(ConnectionPanel.this,
-                                "Bağlantı Başarısız (Ret):\n" + errorMessage,
+                                "Bağlantı Başarısız:\n" + errorMessage,
                                 "Bağlantı Hatası", JOptionPane.ERROR_MESSAGE);
                     }
                 } catch (Exception ex) {

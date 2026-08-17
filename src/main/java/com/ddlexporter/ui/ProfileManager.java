@@ -1,5 +1,6 @@
 package com.ddlexporter.ui;
 
+import com.ddlexporter.common.util.CryptoUtils;
 import com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,14 @@ public class ProfileManager {
                 Map<String, PostgresqlConfigurationSettings> loaded = mapper.readValue(file,
                         new TypeReference<LinkedHashMap<String, PostgresqlConfigurationSettings>>() {});
                 if (loaded != null) {
-                    profiles.putAll(loaded);
+                    for (Map.Entry<String, PostgresqlConfigurationSettings> entry : loaded.entrySet()) {
+                        PostgresqlConfigurationSettings s = entry.getValue();
+                        if (s != null && s.getPassword() != null) {
+                            // Decrypt password if it was encrypted with ENC(...)
+                            s.setPassword(CryptoUtils.decrypt(s.getPassword()));
+                        }
+                        profiles.put(entry.getKey(), s);
+                    }
                 }
             } catch (Exception e) {
                 System.err.println("Profiller okunamadı: " + e.getMessage());
@@ -49,10 +57,35 @@ public class ProfileManager {
 
     public synchronized void saveProfiles() {
         try {
-            mapper.writeValue(new File(PROFILES_FILE), profiles);
+            // Prepare a secure copy with encrypted passwords for disk storage
+            Map<String, PostgresqlConfigurationSettings> secureCopy = new LinkedHashMap<>();
+            for (Map.Entry<String, PostgresqlConfigurationSettings> entry : profiles.entrySet()) {
+                PostgresqlConfigurationSettings original = entry.getValue();
+                if (original != null) {
+                    PostgresqlConfigurationSettings copy = copySettings(original);
+                    if (copy.getPassword() != null && !copy.getPassword().isBlank()) {
+                        copy.setPassword(CryptoUtils.encrypt(copy.getPassword()));
+                    }
+                    secureCopy.put(entry.getKey(), copy);
+                }
+            }
+            mapper.writeValue(new File(PROFILES_FILE), secureCopy);
         } catch (Exception e) {
             System.err.println("Profiller kaydedilemedi: " + e.getMessage());
         }
+    }
+
+    private PostgresqlConfigurationSettings copySettings(PostgresqlConfigurationSettings src) {
+        PostgresqlConfigurationSettings dest = new PostgresqlConfigurationSettings();
+        dest.setServerHost(src.getServerHost());
+        dest.setPort(src.getPort());
+        dest.setDatabaseName(src.getDatabaseName());
+        dest.setUsername(src.getUsername());
+        dest.setPassword(src.getPassword());
+        dest.setSchema(src.getSchema());
+        dest.setPgDumpPath(src.getPgDumpPath());
+        dest.setPgRestorePath(src.getPgRestorePath());
+        return dest;
     }
 
     public synchronized Map<String, PostgresqlConfigurationSettings> getProfiles() {

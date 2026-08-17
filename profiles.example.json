@@ -2,19 +2,19 @@
   "Local Docker (5432)" : {
     "serverHost" : "localhost",
     "port" : 5432,
-    "databaseName" : "denemeDatabase",
+    "databaseName" : "postgres",
     "username" : "postgres",
-    "password" : "12345",
+    "password" : "postgres_password",
     "schema" : "public",
     "pgDumpPath" : "pg_dump",
     "pgRestorePath" : "pg_restore"
   },
-  "Staging Shop DB (5432)" : {
-    "serverHost" : "localhost",
+  "Production Database (Örnek)" : {
+    "serverHost" : "db.example.com",
     "port" : 5432,
-    "databaseName" : "staging_shop_db",
-    "username" : "postgres",
-    "password" : "12345",
+    "databaseName" : "production_db",
+    "username" : "app_reader",
+    "password" : "your_secure_password_here",
     "schema" : "public",
     "pgDumpPath" : "pg_dump",
     "pgRestorePath" : "pg_restore"
