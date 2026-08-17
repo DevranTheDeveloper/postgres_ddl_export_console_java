@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=PostgreSQL DDL Studio
+Comment=Modern PostgreSQL Schema, ERD & Live Diff Studio
+Exec=java -jar target/postgres_ddl_export_console_java-1.0.0.jar
+Icon=src/main/resources/app_icon.png
+Terminal=false
+Categories=Development;Database;IDE;
+StartupNotify=true

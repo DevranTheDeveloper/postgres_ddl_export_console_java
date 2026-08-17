@@ -312,16 +312,39 @@ public class MainFrame extends JFrame {
     }
 
     public static boolean isSystemDarkMode() {
+        String os = System.getProperty("os.name", "").toLowerCase();
         try {
-            Process p = new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start();
-            try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()))) {
-                String line = reader.readLine();
-                if ("Dark".equalsIgnoreCase(line)) {
-                    return true;
+            if (os.contains("mac")) {
+                Process p = new ProcessBuilder("defaults", "read", "-g", "AppleInterfaceStyle").start();
+                try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()))) {
+                    String line = reader.readLine();
+                    if ("Dark".equalsIgnoreCase(line)) {
+                        return true;
+                    }
+                }
+            } else if (os.contains("linux")) {
+                Process p = new ProcessBuilder("gsettings", "get", "org.gnome.desktop.interface", "color-scheme").start();
+                try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()))) {
+                    String line = reader.readLine();
+                    if (line != null && line.contains("dark")) {
+                        return true;
+                    }
+                }
+            } else if (os.contains("win")) {
+                Process p = new ProcessBuilder("reg", "query",
+                        "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize",
+                        "/v", "AppsUseLightTheme").start();
+                try (var reader = new java.io.BufferedReader(new java.io.InputStreamReader(p.getInputStream()))) {
+                    String line;
+                    while ((line = reader.readLine()) != null) {
+                        if (line.contains("AppsUseLightTheme") && line.contains("0x0")) {
+                            return true;
+                        }
+                    }
                 }
             }
         } catch (Exception ignored) {}
-        return false;
+        return true;
     }
 
     private static boolean loadSavedThemePreference() {
@@ -392,23 +415,24 @@ public class MainFrame extends JFrame {
 
     private void initLookAndFeel(boolean dark) {
         try {
-            if (dark) {
-                com.formdev.flatlaf.themes.FlatMacDarkLaf.setup();
+            boolean isMac = System.getProperty("os.name", "").toLowerCase().contains("mac");
+            if (isMac) {
+                if (dark) {
+                    com.formdev.flatlaf.themes.FlatMacDarkLaf.setup();
+                } else {
+                    com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
+                }
             } else {
-                com.formdev.flatlaf.themes.FlatMacLightLaf.setup();
-            }
-        } catch (Throwable t) {
-            try {
                 if (dark) {
                     com.formdev.flatlaf.FlatDarkLaf.setup();
                 } else {
                     com.formdev.flatlaf.FlatLightLaf.setup();
                 }
-            } catch (Throwable t2) {
-                try {
-                    UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-                } catch (Exception ignored) {
-                }
+            }
+        } catch (Throwable t) {
+            try {
+                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+            } catch (Exception ignored) {
             }
         }
     }
