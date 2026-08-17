@@ -36,7 +36,7 @@ jobs:
           cp src/main/resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
           cp target/postgres_ddl_export_console_java-1.0.0.jar "$APP_DIR/Contents/MacOS/app.jar"
           
-          # Simple bash launcher
+          # Launcher script
           cat << 'EOF' > "$APP_DIR/Contents/MacOS/launcher"
           #!/bin/bash
           DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -57,9 +57,9 @@ jobs:
               <key>CFBundleIdentifier</key>
               <string>com.ddlexporter.app</string>
               <key>CFBundleVersion</key>
-              <string>5.2.0</string>
+              <string>5.4.0</string>
               <key>CFBundleShortVersionString</key>
-              <string>5.2.0</string>
+              <string>5.4.0</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleExecutable</key>
@@ -75,31 +75,84 @@ jobs:
           mkdir -p "$STAGING"
           cp -R "$APP_DIR" "$STAGING/"
           ln -s /Applications "$STAGING/Applications"
-          hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "PostgreSQL-DDL-Studio-5.2.0-macOS.dmg"
+          hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "PostgreSQL-DDL-Studio-5.4.0-macOS.dmg"
           rm -rf "$STAGING"
+
+      - name: Create Windows Portable ZIP
+        run: |
+          WIN_DIR="PostgreSQL-DDL-Studio-Windows"
+          mkdir -p "$WIN_DIR"
+          cp target/postgres_ddl_export_console_java-1.0.0.jar "$WIN_DIR/PostgreSQL-DDL-Studio.jar"
+          cp scripts/windows/PostgreSQL-DDL-Studio.bat "$WIN_DIR/"
+          cp scripts/windows/PostgreSQL-DDL-Studio.vbs "$WIN_DIR/"
+          cp scripts/windows/README-Windows.txt "$WIN_DIR/"
+          cp src/main/resources/AppIcon.ico "$WIN_DIR/"
+          zip -r "PostgreSQL-DDL-Studio-5.4.0-Windows.zip" "$WIN_DIR"
+          rm -rf "$WIN_DIR"
+
+      - name: Create Linux Portable Tarball
+        run: |
+          LINUX_DIR="PostgreSQL-DDL-Studio-Linux"
+          mkdir -p "$LINUX_DIR"
+          cp target/postgres_ddl_export_console_java-1.0.0.jar "$LINUX_DIR/PostgreSQL-DDL-Studio.jar"
+          cp scripts/linux/run.sh "$LINUX_DIR/run.sh"
+          cp scripts/linux/postgres-ddl-studio.desktop "$LINUX_DIR/"
+          cp src/main/resources/app_icon.png "$LINUX_DIR/"
+          
+          cat << 'EOF' > "$LINUX_DIR/README-Linux.txt"
+          ========================================================================
+            🐧 PostgreSQL DDL Studio - Linux Portable Edition
+          ========================================================================
+
+          Gereksinimler:
+          - Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux vb.
+          - Java 17+ (OpenJDK / Temurin: sudo apt install openjdk-17-jre)
+
+          Nasıl Çalıştırılır:
+          1. Terminalden:
+             chmod +x run.sh
+             ./run.sh
+
+          2. Masaüstü menüsüne eklemek için:
+             cp postgres-ddl-studio.desktop ~/.local/share/applications/
+
+          3. Komut satırından (CLI):
+             java -jar PostgreSQL-DDL-Studio.jar -db:POSTGRESQL -od:./export_output -s:profiles.json
+          ========================================================================
+          EOF
+          chmod +x "$LINUX_DIR/run.sh"
+          tar -czf "PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz" "$LINUX_DIR"
+          rm -rf "$LINUX_DIR"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
-          name: "PostgreSQL DDL Studio ${{ github.ref_name }} (Enterprise Edition)"
+          name: "PostgreSQL DDL Studio ${{ github.ref_name }} (Cross-Platform Multi-OS Edition)"
           body: |
             ## 🚀 PostgreSQL DDL Studio ${{ github.ref_name }} Yayında!
             
+            PostgreSQL DDL Studio artık **macOS**, **Windows** ve **Linux** olmak üzere tüm ana işletim sistemlerinde yerel (native) başlatıcılarla çalışabilen tam teşekküllü **Çok Platformlu (Cross-Platform)** bir geliştirici stüdyosudur.
+            
             ### ✨ Öne Çıkan Özellikler:
+            - **⚡ Evrensel Veritabanı & Docker Asistanı:** Docker konteynerlerini otomatik algılama, tek tıkla yeni demo PostgreSQL başlatma, Neon / Supabase / AWS RDS bağlantı dizelerini (URI) otomatik çözme ve test şeması yükleme (Seed Data).
             - **📂 İnteraktif Şema Gezgini:** Hiyerarşik ağaç, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme.
             - **🗺️ Görsel ERD Haritası:** Panning, zooming (%20-%300), sürüklenebilir tablo kartları, Bézier ilişkileri, Mermaid ve PNG dışa aktarma.
             - **🌐 Canlı Ortam Karşılaştırma (Diff):** Staging vs Production fark tespiti, otomatik dağıtım yaması (Deploy Patch) üretimi ve veri kaybı koruması.
             - **📊 Canlı Sunucu Durumu & Performans:** Bağlantı havuzu, toplam boyut, önbellek verimliliği (%99+), Java2D grafikleri ve sistem teşhisi.
             - **⏱️ Otomatik Zamanlanmış Yedekleme (Cron):** Arka planda sessiz DDL yedekleme, otomatik Git commit ve durdurma/başlatma kontrolü.
             - **🛡️ Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve uzak SSL MitM koruması.
-            - **🎨 macOS Native Koyu / Açık Tema:** İşletim sistemiyle otomatik senkronize olan FlatMacDarkLaf arayüzü.
+            - **🎨 Çok Platformlu Yerel Tema Desteği:** İşletim sisteminizin açık/koyu temasını otomatik algılayan FlatLaf arayüzü.
             
             ---
-            ### 📥 İndirme Bağlantıları:
-            - **macOS (.dmg):** `PostgreSQL-DDL-Studio-5.2.0-macOS.dmg`
-            - **Evrensel JAR (Windows, Linux, Mac):** `postgres_ddl_export_console_java-1.0.0.jar`
+            ### 📥 İndirme Paketleri (Binary Assets):
+            - 🍏 **macOS (.dmg):** `PostgreSQL-DDL-Studio-5.4.0-macOS.dmg`
+            - 🪟 **Windows (.zip):** `PostgreSQL-DDL-Studio-5.4.0-Windows.zip` (Sessiz .vbs & .bat başlatıcılı)
+            - 🐧 **Linux (.tar.gz):** `PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz` (.sh başlatıcı & .desktop entegrasyonu)
+            - ☕ **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
           files: |
-            PostgreSQL-DDL-Studio-5.2.0-macOS.dmg
+            PostgreSQL-DDL-Studio-5.4.0-macOS.dmg
+            PostgreSQL-DDL-Studio-5.4.0-Windows.zip
+            PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz
             target/postgres_ddl_export_console_java-1.0.0.jar
           draft: false
           prerelease: false
