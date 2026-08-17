@@ -21,10 +21,16 @@ public class Main {
         try {
             Main app = new Main(args);
             app.run();
-        } catch (Exception ex) {
+        } catch (Throwable ex) {
             System.err.println("Beklenmedik bir hata oluştu: ");
             System.err.println(ex.getMessage());
             ex.printStackTrace(System.err);
+            try {
+                javax.swing.JOptionPane.showMessageDialog(null,
+                        "Uygulama Başlatılamadı:\n" + ex.toString() + "\n\nJava Sürümü: " + System.getProperty("java.version"),
+                        "PostgreSQL DDL Studio - Başlatma Hatası",
+                        javax.swing.JOptionPane.ERROR_MESSAGE);
+            } catch (Throwable ignored) {}
             System.exit(1);
         }
     }
@@ -33,8 +39,18 @@ public class Main {
         if (args == null || args.length == 0) {
             // Masaüstü GUI Modunu Başlat
             javax.swing.SwingUtilities.invokeLater(() -> {
-                com.ddlexporter.ui.MainFrame mainFrame = new com.ddlexporter.ui.MainFrame();
-                mainFrame.setVisible(true);
+                try {
+                    com.ddlexporter.ui.MainFrame mainFrame = new com.ddlexporter.ui.MainFrame();
+                    mainFrame.setVisible(true);
+                } catch (Throwable t) {
+                    t.printStackTrace();
+                    try {
+                        javax.swing.JOptionPane.showMessageDialog(null,
+                                "Masaüstü Arayüzü Başlatılamadı:\n" + t.toString() + "\n\nJava Sürümü: " + System.getProperty("java.version"),
+                                "PostgreSQL DDL Studio - Arayüz Hatası",
+                                javax.swing.JOptionPane.ERROR_MESSAGE);
+                    } catch (Throwable ignored) {}
+                }
             });
             return;
         }
