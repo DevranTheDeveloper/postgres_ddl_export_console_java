@@ -26,7 +26,7 @@ jobs:
       - name: Build Fat JAR with Maven
         run: mvn clean package -DskipTests
 
-      - name: Create macOS App & DMG Installer
+      - name: Create macOS App & Drag-and-Drop DMG Installer
         run: |
           APP_DIR="PostgreSQL DDL Studio.app"
           mkdir -p "$APP_DIR/Contents/MacOS"
@@ -70,13 +70,17 @@ jobs:
           </plist>
           EOF
           
-          # Staging DMG
-          STAGING="dmg_staging"
-          mkdir -p "$STAGING"
-          cp -R "$APP_DIR" "$STAGING/"
-          ln -s /Applications "$STAGING/Applications"
-          hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "PostgreSQL-DDL-Studio-5.4.0-macOS.dmg"
-          rm -rf "$STAGING"
+          # Build Professional DMG
+          OUTPUT_DMG="PostgreSQL-DDL-Studio-5.4.0-macOS.dmg"
+          APP_PATH="$APP_DIR"
+          /bin/bash scripts/macos/build_dmg.sh || {
+            STAGING="dmg_staging"
+            mkdir -p "$STAGING"
+            cp -R "$APP_DIR" "$STAGING/"
+            ln -s /Applications "$STAGING/Applications"
+            hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT_DMG"
+            rm -rf "$STAGING"
+          }
 
       - name: Create Windows Portable ZIP
         run: |
