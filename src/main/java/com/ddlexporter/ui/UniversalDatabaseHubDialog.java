@@ -315,8 +315,8 @@ public class UniversalDatabaseHubDialog extends JDialog {
         s.setServerHost("localhost");
         s.setPort(port);
         s.setUsername("postgres");
-        s.setPassword("12345");
-        s.setDatabaseName(selected.name.contains("shop") ? "staging_shop_db" : "denemeDatabase");
+        s.setPassword("");
+        s.setDatabaseName("postgres");
         s.setSchema("public");
 
         if (onConnectCallback != null) onConnectCallback.accept(s);
