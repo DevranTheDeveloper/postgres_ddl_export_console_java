@@ -2,6 +2,9 @@ package com.ddlexporter.er;
 
 import java.io.File;
 import java.nio.file.Files;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,7 +68,7 @@ public class ErDiagramEngine {
     public static ErModel buildModelFromDirectory(File exportDir, String targetDbName) {
         ErModel model = new ErModel();
         if (exportDir == null || !exportDir.exists()) {
-            return generateSampleModel();
+            return model;
         }
 
         try {
@@ -88,11 +91,119 @@ public class ErDiagramEngine {
             }
         } catch (Exception ignored) {}
 
-        if (model.tables.isEmpty()) {
-            return generateSampleModel();
+        if (!model.tables.isEmpty()) {
+            arrangeLayout(model);
         }
 
-        arrangeLayout(model);
+        return model;
+    }
+
+    /**
+     * Builds ER Model directly by querying live PostgreSQL schema metadata.
+     */
+    public static ErModel buildModelFromDatabase(Connection conn, String schemaName) {
+        ErModel model = new ErModel();
+        if (conn == null) return model;
+        if (schemaName == null || schemaName.isBlank()) schemaName = "public";
+
+        try {
+            // 1. Fetch tables
+            String tableSql = "SELECT table_name FROM information_schema.tables WHERE table_schema = ? AND table_type = 'BASE TABLE' ORDER BY table_name";
+            try (PreparedStatement ps = conn.prepareStatement(tableSql)) {
+                ps.setString(1, schemaName);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String tName = rs.getString("table_name");
+                        model.tables.put(tName, new ErTable(tName, schemaName));
+                    }
+                }
+            }
+
+            if (model.tables.isEmpty()) return model;
+
+            // 2. Fetch columns
+            String colSql = "SELECT table_name, column_name, data_type FROM information_schema.columns WHERE table_schema = ? ORDER BY table_name, ordinal_position";
+            try (PreparedStatement ps = conn.prepareStatement(colSql)) {
+                ps.setString(1, schemaName);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String tName = rs.getString("table_name");
+                        String colName = rs.getString("column_name");
+                        String dataType = rs.getString("data_type");
+                        ErTable tbl = model.tables.get(tName);
+                        if (tbl != null) {
+                            tbl.columns.add(new ErColumn(colName, dataType, false, false));
+                        }
+                    }
+                }
+            }
+
+            // 3. Fetch Primary Keys
+            String pkSql = "SELECT kcu.table_name, kcu.column_name " +
+                    "FROM information_schema.table_constraints tc " +
+                    "JOIN information_schema.key_column_usage kcu " +
+                    "  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
+                    "WHERE tc.constraint_type = 'PRIMARY KEY' AND tc.table_schema = ?";
+            try (PreparedStatement ps = conn.prepareStatement(pkSql)) {
+                ps.setString(1, schemaName);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String tName = rs.getString("table_name");
+                        String colName = rs.getString("column_name");
+                        ErTable tbl = model.tables.get(tName);
+                        if (tbl != null) {
+                            for (ErColumn col : tbl.columns) {
+                                if (col.name.equalsIgnoreCase(colName)) {
+                                    col.isPk = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 4. Fetch Foreign Keys
+            String fkSql = "SELECT " +
+                    "    kcu.table_name AS src_table, " +
+                    "    kcu.column_name AS src_col, " +
+                    "    ccu.table_name AS tgt_table, " +
+                    "    ccu.column_name AS tgt_col " +
+                    "FROM information_schema.table_constraints AS tc " +
+                    "JOIN information_schema.key_column_usage AS kcu " +
+                    "  ON tc.constraint_name = kcu.constraint_name AND tc.table_schema = kcu.table_schema " +
+                    "JOIN information_schema.constraint_column_usage AS ccu " +
+                    "  ON ccu.constraint_name = tc.constraint_name AND ccu.table_schema = tc.table_schema " +
+                    "WHERE tc.constraint_type = 'FOREIGN KEY' AND tc.table_schema = ?";
+            try (PreparedStatement ps = conn.prepareStatement(fkSql)) {
+                ps.setString(1, schemaName);
+                try (ResultSet rs = ps.executeQuery()) {
+                    while (rs.next()) {
+                        String srcTable = rs.getString("src_table");
+                        String srcCol = rs.getString("src_col");
+                        String tgtTable = rs.getString("tgt_table");
+                        String tgtCol = rs.getString("tgt_col");
+
+                        model.relations.add(new ErRelation(srcTable, srcCol, tgtTable, tgtCol));
+
+                        ErTable tbl = model.tables.get(srcTable);
+                        if (tbl != null) {
+                            for (ErColumn col : tbl.columns) {
+                                if (col.name.equalsIgnoreCase(srcCol)) {
+                                    col.isFk = true;
+                                    col.fkTargetTable = tgtTable;
+                                    col.fkTargetColumn = tgtCol;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            arrangeLayout(model);
+        } catch (Exception ignored) {}
+
         return model;
     }
 
@@ -129,181 +240,127 @@ public class ErDiagramEngine {
                     Matcher fkMatcher = fkPattern.matcher(trimmed);
                     if (fkMatcher.find()) {
                         String srcCol = fkMatcher.group(1).trim().replace("\"", "");
-                        String tgtTbl = fkMatcher.group(2).trim();
+                        String tgtTable = fkMatcher.group(2).trim().replace("\"", "");
                         String tgtCol = fkMatcher.group(3).trim().replace("\"", "");
-                        foundRelations.add(new ErRelation(tableName, srcCol, tgtTbl, tgtCol));
+                        foundRelations.add(new ErRelation(tableName, srcCol, tgtTable, tgtCol));
                     }
                 }
             }
 
-            // 2. Second pass for columns
+            // 2. Second pass for column definitions
             for (String line : lines) {
                 String trimmed = line.trim();
-                if (trimmed.endsWith(",")) trimmed = trimmed.substring(0, trimmed.length() - 1).trim();
-                if (trimmed.isEmpty() || trimmed.startsWith("--") || trimmed.toUpperCase().startsWith("CONSTRAINT")
-                        || trimmed.toUpperCase().startsWith("PRIMARY KEY") || trimmed.toUpperCase().startsWith("FOREIGN KEY")) {
+                if (trimmed.startsWith("CONSTRAINT") || trimmed.startsWith("PRIMARY KEY") || trimmed.startsWith("FOREIGN KEY") || trimmed.startsWith("CHECK") || trimmed.startsWith("UNIQUE")) {
                     continue;
                 }
+                if (trimmed.isEmpty() || trimmed.startsWith("--") || trimmed.startsWith(")")) continue;
 
                 String[] parts = trimmed.split("\\s+");
                 if (parts.length >= 2) {
-                    String colName = parts[0].replace("\"", "");
-                    String colType = parts[1];
+                    String colName = parts[0].replace("\"", "").replace(",", "");
+                    String colType = parts[1].replace(",", "").toUpperCase();
+
                     boolean isPk = pkCols.contains(colName.toLowerCase()) || trimmed.toUpperCase().contains("PRIMARY KEY");
                     boolean isFk = false;
-
-                    for (ErRelation rel : foundRelations) {
-                        if (rel.sourceColumn.equalsIgnoreCase(colName)) {
-                            isFk = true;
-                            break;
-                        }
-                    }
+                    String fkTarget = null;
+                    String fkCol = null;
 
                     if (trimmed.toUpperCase().contains("REFERENCES")) {
-                        Pattern inlineFk = Pattern.compile("REFERENCES\\s*(?:[a-zA-Z0-9_]+\\.)?([a-zA-Z0-9_]+)\\s*\\(([^)]+)\\)", Pattern.CASE_INSENSITIVE);
-                        Matcher ifk = inlineFk.matcher(trimmed);
-                        if (ifk.find()) {
+                        Pattern inlineFk = Pattern.compile("REFERENCES\\s+(?:[a-zA-Z0-9_]+\\.)?([a-zA-Z0-9_]+)\\s*\\(([^)]+)\\)", Pattern.CASE_INSENSITIVE);
+                        Matcher fkM = inlineFk.matcher(trimmed);
+                        if (fkM.find()) {
                             isFk = true;
-                            foundRelations.add(new ErRelation(tableName, colName, ifk.group(1), ifk.group(2)));
+                            fkTarget = fkM.group(1);
+                            fkCol = fkM.group(2);
+                            foundRelations.add(new ErRelation(tableName, colName, fkTarget, fkCol));
                         }
                     }
 
-                    table.columns.add(new ErColumn(colName, colType, isPk, isFk));
+                    ErColumn column = new ErColumn(colName, colType, isPk, isFk);
+                    column.fkTargetTable = fkTarget;
+                    column.fkTargetColumn = fkCol;
+                    table.columns.add(column);
                 }
             }
 
-            table.height = 36 + Math.max(1, table.columns.size()) * 20 + 8;
+            for (ErRelation rel : foundRelations) {
+                model.relations.add(rel);
+                for (ErColumn col : table.columns) {
+                    if (col.name.equalsIgnoreCase(rel.sourceColumn)) {
+                        col.isFk = true;
+                        col.fkTargetTable = rel.targetTable;
+                        col.fkTargetColumn = rel.targetColumn;
+                    }
+                }
+            }
+
             model.tables.put(tableName, table);
-            model.relations.addAll(foundRelations);
         }
     }
 
     public static void arrangeLayout(ErModel model) {
-        int col = 0;
-        int row = 0;
-        int spacingX = 270;
-        int spacingY = 220;
-        int startX = 40;
-        int startY = 40;
+        int x = 40;
+        int y = 40;
+        int maxRowHeight = 0;
+        int colCount = 0;
         int maxCols = 3;
 
         for (ErTable table : model.tables.values()) {
-            table.x = startX + col * spacingX;
-            table.y = startY + row * spacingY;
-            col++;
-            if (col >= maxCols) {
-                col = 0;
-                row++;
+            int calculatedHeight = 44 + (table.columns.size() * 22) + 12;
+            table.height = Math.max(120, calculatedHeight);
+            table.width = 230;
+
+            table.x = x;
+            table.y = y;
+
+            maxRowHeight = Math.max(maxRowHeight, table.height);
+            colCount++;
+
+            if (colCount >= maxCols) {
+                colCount = 0;
+                x = 40;
+                y += maxRowHeight + 50;
+                maxRowHeight = 0;
+            } else {
+                x += table.width + 70;
             }
         }
-    }
-
-    public static ErModel generateSampleModel() {
-        ErModel model = new ErModel();
-
-        // 1. Users
-        ErTable users = new ErTable("users", "public");
-        users.columns.add(new ErColumn("id", "integer", true, false));
-        users.columns.add(new ErColumn("email", "varchar(255)", false, false));
-        users.columns.add(new ErColumn("full_name", "varchar(100)", false, false));
-        users.columns.add(new ErColumn("created_at", "timestamp", false, false));
-        users.height = 36 + users.columns.size() * 20 + 8;
-        users.x = 40; users.y = 50;
-        model.tables.put("users", users);
-
-        // 2. Categories
-        ErTable categories = new ErTable("categories", "public");
-        categories.columns.add(new ErColumn("id", "integer", true, false));
-        categories.columns.add(new ErColumn("name", "varchar(100)", false, false));
-        categories.columns.add(new ErColumn("slug", "varchar(100)", false, false));
-        categories.height = 36 + categories.columns.size() * 20 + 8;
-        categories.x = 330; categories.y = 50;
-        model.tables.put("categories", categories);
-
-        // 3. Products
-        ErTable products = new ErTable("products", "public");
-        products.columns.add(new ErColumn("id", "integer", true, false));
-        products.columns.add(new ErColumn("category_id", "integer", false, true));
-        products.columns.add(new ErColumn("name", "varchar(255)", false, false));
-        products.columns.add(new ErColumn("price", "numeric(10,2)", false, false));
-        products.columns.add(new ErColumn("is_active", "boolean", false, false));
-        products.height = 36 + products.columns.size() * 20 + 8;
-        products.x = 330; products.y = 260;
-        model.tables.put("products", products);
-
-        // 4. Orders
-        ErTable orders = new ErTable("orders", "public");
-        orders.columns.add(new ErColumn("id", "integer", true, false));
-        orders.columns.add(new ErColumn("user_id", "integer", false, true));
-        orders.columns.add(new ErColumn("order_date", "timestamp", false, false));
-        orders.columns.add(new ErColumn("total_amount", "numeric(12,2)", false, false));
-        orders.columns.add(new ErColumn("status", "varchar(50)", false, false));
-        orders.height = 36 + orders.columns.size() * 20 + 8;
-        orders.x = 40; orders.y = 260;
-        model.tables.put("orders", orders);
-
-        // 5. Order Items
-        ErTable orderItems = new ErTable("order_items", "public");
-        orderItems.columns.add(new ErColumn("id", "integer", true, false));
-        orderItems.columns.add(new ErColumn("order_id", "integer", false, true));
-        orderItems.columns.add(new ErColumn("product_id", "integer", false, true));
-        orderItems.columns.add(new ErColumn("quantity", "integer", false, false));
-        orderItems.columns.add(new ErColumn("unit_price", "numeric(10,2)", false, false));
-        orderItems.height = 36 + orderItems.columns.size() * 20 + 8;
-        orderItems.x = 620; orderItems.y = 260;
-        model.tables.put("order_items", orderItems);
-
-        // 6. Product Reviews
-        ErTable reviews = new ErTable("product_reviews", "public");
-        reviews.columns.add(new ErColumn("id", "integer", true, false));
-        reviews.columns.add(new ErColumn("product_id", "integer", false, true));
-        reviews.columns.add(new ErColumn("user_id", "integer", false, true));
-        reviews.columns.add(new ErColumn("rating", "integer", false, false));
-        reviews.columns.add(new ErColumn("comment", "text", false, false));
-        reviews.height = 36 + reviews.columns.size() * 20 + 8;
-        reviews.x = 620; reviews.y = 50;
-        model.tables.put("product_reviews", reviews);
-
-        // Relations
-        model.relations.add(new ErRelation("products", "category_id", "categories", "id"));
-        model.relations.add(new ErRelation("orders", "user_id", "users", "id"));
-        model.relations.add(new ErRelation("order_items", "order_id", "orders", "id"));
-        model.relations.add(new ErRelation("order_items", "product_id", "products", "id"));
-        model.relations.add(new ErRelation("product_reviews", "product_id", "products", "id"));
-        model.relations.add(new ErRelation("product_reviews", "user_id", "users", "id"));
-
-        return model;
     }
 
     public static String exportToMermaid(ErModel model) {
         StringBuilder sb = new StringBuilder();
         sb.append("erDiagram\n");
-        for (ErRelation rel : model.relations) {
-            sb.append("    ").append(rel.targetTable).append(" ||--o{ ").append(rel.sourceTable)
-                    .append(" : \"references (").append(rel.sourceColumn).append(")\"\n");
-        }
-        for (ErTable tbl : model.tables.values()) {
-            sb.append("    ").append(tbl.name).append(" {\n");
-            for (ErColumn col : tbl.columns) {
-                sb.append("        ").append(col.type.replace(" ", "_")).append(" ").append(col.name);
+
+        for (ErTable table : model.tables.values()) {
+            sb.append("    ").append(table.name).append(" {\n");
+            for (ErColumn col : table.columns) {
+                String type = col.type.replaceAll("[^a-zA-Z0-9_]", "_");
+                sb.append("        ").append(type).append(" ").append(col.name);
                 if (col.isPk) sb.append(" PK");
                 if (col.isFk) sb.append(" FK");
                 sb.append("\n");
             }
             sb.append("    }\n");
         }
+
+        for (ErRelation rel : model.relations) {
+            sb.append("    ").append(rel.sourceTable).append(" }|--|| ").append(rel.targetTable).append(" : \"references\"\n");
+        }
+
         return sb.toString();
     }
 
-    public static String generateTableDdl(ErTable tbl) {
-        if (tbl == null) return "";
+    public static String generateTableDdl(ErTable table) {
         StringBuilder sb = new StringBuilder();
-        sb.append("CREATE TABLE IF NOT EXISTS ").append(tbl.schema != null ? tbl.schema + "." : "public.").append(tbl.name).append(" (\n");
-        int idx = 0;
-        for (ErColumn col : tbl.columns) {
+        sb.append("CREATE TABLE ").append(table.schema).append(".").append(table.name).append(" (\n");
+        for (int i = 0; i < table.columns.size(); i++) {
+            ErColumn col = table.columns.get(i);
             sb.append("    ").append(col.name).append(" ").append(col.type);
             if (col.isPk) sb.append(" PRIMARY KEY");
-            if (++idx < tbl.columns.size()) sb.append(",");
+            if (col.isFk && col.fkTargetTable != null) {
+                sb.append(" REFERENCES ").append(col.fkTargetTable).append("(").append(col.fkTargetColumn).append(")");
+            }
+            if (i < table.columns.size() - 1) sb.append(",");
             sb.append("\n");
         }
         sb.append(");");

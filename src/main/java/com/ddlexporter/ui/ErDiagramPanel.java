@@ -29,7 +29,7 @@ public class ErDiagramPanel extends JPanel {
         setLayout(new BorderLayout(5, 5));
         setBorder(BorderFactory.createEmptyBorder(6, 6, 6, 6));
 
-        this.model = ErDiagramEngine.generateSampleModel();
+        this.model = new ErDiagramEngine.ErModel();
         this.canvas = new ErCanvas();
 
         // 1. Top Toolbar
@@ -137,9 +137,38 @@ public class ErDiagramPanel extends JPanel {
         if (currentExportDir != null && currentExportDir.exists()) {
             this.model = ErDiagramEngine.buildModelFromDirectory(currentExportDir, targetDbName);
         } else {
-            this.model = ErDiagramEngine.generateSampleModel();
+            this.model = new ErDiagramEngine.ErModel();
         }
         canvas.resetView();
+        canvas.repaint();
+    }
+
+    public void loadFromDatabase(com.ddlexporter.postgresql.config.PostgresqlConfigurationSettings settings) {
+        if (settings == null) return;
+        new SwingWorker<ErDiagramEngine.ErModel, Void>() {
+            @Override
+            protected ErDiagramEngine.ErModel doInBackground() {
+                String url = String.format("jdbc:postgresql://%s:%d/%s",
+                        settings.getServerHost(), settings.getPort(), settings.getDatabaseName());
+                try (java.sql.Connection conn = java.sql.DriverManager.getConnection(url, settings.getUsername(), settings.getPassword())) {
+                    return ErDiagramEngine.buildModelFromDatabase(conn, settings.getSchema());
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    ErDiagramEngine.ErModel liveModel = get();
+                    if (liveModel != null) {
+                        model = liveModel;
+                        canvas.resetView();
+                        canvas.repaint();
+                    }
+                } catch (Exception ignored) {}
+            }
+        }.execute();
     }
 
     private void copyMermaidCode() {
@@ -349,6 +378,22 @@ public class ErDiagramPanel extends JPanel {
             // Apply pan & zoom transform
             g2.translate(offsetX, offsetY);
             g2.scale(scale, scale);
+
+            if (model.tables.isEmpty()) {
+                g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+                g2.setColor(isDark ? new Color(200, 205, 215) : new Color(60, 65, 75));
+                String msg1 = "🗺️ Şema & İlişki Haritası Henüz Oluşmadı";
+                FontMetrics fm = g2.getFontMetrics();
+                g2.drawString(msg1, (getWidth() - fm.stringWidth(msg1)) / 2 - offsetX, (getHeight() / 2 - 15) - offsetY);
+
+                g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+                g2.setColor(isDark ? new Color(130, 135, 150) : new Color(120, 125, 135));
+                String msg2 = "Veritabanınızdaki tabloları görmek için 'DDL Dışa Aktar' butonuna basın veya örnek şema yükleyin.";
+                FontMetrics fm2 = g2.getFontMetrics();
+                g2.drawString(msg2, (getWidth() - fm2.stringWidth(msg2)) / 2 - offsetX, (getHeight() / 2 + 15) - offsetY);
+                g2.dispose();
+                return;
+            }
 
             // 1. Draw Relations (Bézier connecting curves)
             drawRelations(g2);

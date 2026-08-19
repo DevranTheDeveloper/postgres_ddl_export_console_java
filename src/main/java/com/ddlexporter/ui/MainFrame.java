@@ -84,6 +84,8 @@ public class MainFrame extends JFrame {
         serverStatusPanel.setOnSettingsUpdate(s -> {
             connectionPanel.applySettings(s);
             connectionPanel.testConnection();
+            erDiagramPanel.loadFromDatabase(s);
+            startExportProcess();
         });
         diffViewerPanel = new DiffViewerPanel(profileManager);
         gitSyncPanel = new GitSyncPanel();
@@ -568,6 +570,7 @@ public class MainFrame extends JFrame {
                         + settings.getPort() + "/" + settings.getDatabaseName() + ")");
                 schemaExplorerPanel.focusDatabase(settings.getDatabaseName());
                 erDiagramPanel.setDatabase(connectionPanel.getOutputDir(), settings.getDatabaseName());
+                erDiagramPanel.loadFromDatabase(settings);
                 serverStatusPanel.showDisconnectedState(null);
             }
         }
