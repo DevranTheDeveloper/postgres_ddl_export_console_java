@@ -168,12 +168,16 @@ public class UpdateManager {
         File appDir = runningJar.getParentFile() != null ? runningJar.getParentFile() : new File(".");
 
         if (os.contains("win")) {
-            // Windows atomic updater script
+            // Windows atomic updater script with file unlock delay and auto-launcher
             File updaterBat = new File(appDir, "update_runner.bat");
             String batContent = "@echo off\r\n" +
-                    "timeout /t 1 /nobreak >nul\r\n" +
+                    "ping 127.0.0.1 -n 2 >nul\r\n" +
                     "move /y \"" + downloadedFile.getAbsolutePath() + "\" \"" + runningJar.getAbsolutePath() + "\"\r\n" +
-                    "start \"\" javaw -jar \"" + runningJar.getAbsolutePath() + "\"\r\n" +
+                    "if exist \"" + new File(appDir, "PostgreSQL-DDL-Studio.bat").getAbsolutePath() + "\" (\r\n" +
+                    "    start \"\" \"" + new File(appDir, "PostgreSQL-DDL-Studio.bat").getAbsolutePath() + "\"\r\n" +
+                    ") else (\r\n" +
+                    "    start \"\" javaw -jar \"" + runningJar.getAbsolutePath() + "\"\r\n" +
+                    ")\r\n" +
                     "del \"%~f0\"\r\n" +
                     "exit\r\n";
             java.nio.file.Files.writeString(updaterBat.toPath(), batContent);
@@ -182,11 +186,18 @@ public class UpdateManager {
                     .directory(appDir)
                     .start();
         } else {
-            // Unix atomic rename and relaunch
+            // Linux & macOS atomic inode replacement and relaunch
             java.nio.file.Files.move(downloadedFile.toPath(), runningJar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            new ProcessBuilder("java", "-jar", runningJar.getAbsolutePath())
-                    .directory(appDir)
-                    .start();
+            File linuxRunScript = new File(appDir, "run.sh");
+            if (linuxRunScript.exists() && linuxRunScript.canExecute()) {
+                new ProcessBuilder(linuxRunScript.getAbsolutePath())
+                        .directory(appDir)
+                        .start();
+            } else {
+                new ProcessBuilder("java", "-jar", runningJar.getAbsolutePath())
+                        .directory(appDir)
+                        .start();
+            }
         }
 
         System.exit(0);
