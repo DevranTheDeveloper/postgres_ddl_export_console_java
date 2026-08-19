@@ -41,16 +41,16 @@ public class ProfileManager {
             }
         }
 
-        // Add default profile if empty
+        // Add clean standard default profile if empty
         if (profiles.isEmpty()) {
             PostgresqlConfigurationSettings defaultSetting = new PostgresqlConfigurationSettings();
             defaultSetting.setServerHost("localhost");
             defaultSetting.setPort(5432);
-            defaultSetting.setDatabaseName("denemeDatabase");
+            defaultSetting.setDatabaseName("postgres");
             defaultSetting.setUsername("postgres");
-            defaultSetting.setPassword("12345");
+            defaultSetting.setPassword("");
             defaultSetting.setSchema("public");
-            profiles.put("Local Docker (5432)", defaultSetting);
+            profiles.put("Yerel PostgreSQL (5432)", defaultSetting);
             saveProfiles();
         }
     }

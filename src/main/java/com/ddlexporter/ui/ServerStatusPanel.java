@@ -724,12 +724,12 @@ public class ServerStatusPanel extends JPanel {
 
     // Custom Java2D Metrics Chart Component
     public static class MetricsChartPanel extends JPanel {
-        private long commits = 100;
-        private long rollbacks = 2;
-        private long blksHit = 950;
-        private long blksRead = 50;
-        private int activeConns = 5;
-        private int maxConns = 100;
+        private long commits = 0;
+        private long rollbacks = 0;
+        private long blksHit = 0;
+        private long blksRead = 0;
+        private int activeConns = 0;
+        private int maxConns = 0;
         private boolean isDark = false;
 
         public MetricsChartPanel() {
