@@ -1,4 +1,4 @@
-name: Build & Publish Release
+name: Build & Publish Multi-Platform Release
 
 on:
   push:
@@ -10,7 +10,8 @@ permissions:
   contents: write
 
 jobs:
-  build-release:
+  build-macos-linux:
+    name: Build macOS DMG & Linux Tarball & Fat JAR
     runs-on: macos-latest
     steps:
       - name: Checkout Code
@@ -128,6 +129,71 @@ jobs:
           tar -czf "PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz" "$LINUX_DIR"
           rm -rf "$LINUX_DIR"
 
+      - name: Save Unix Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: unix-artifacts
+          path: |
+            PostgreSQL-DDL-Studio-5.4.0-macOS.dmg
+            PostgreSQL-DDL-Studio-5.4.0-Windows.zip
+            PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz
+            target/postgres_ddl_export_console_java-1.0.0.jar
+
+  build-windows-exe:
+    name: Build Windows Native EXE Setup Wizard
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build Fat JAR with Maven
+        shell: cmd
+        run: mvn clean package -DskipTests
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: choco install innosetup -y --no-progress
+
+      - name: Compile Windows EXE Setup Wizard
+        shell: cmd
+        run: |
+          mkdir dist
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" scripts\windows\setup.iss
+          dir dist\*.exe
+
+      - name: Save Windows EXE Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-exe-artifact
+          path: dist/PostgreSQL-DDL-Studio-Setup-5.4.0.exe
+
+  publish-release:
+    name: Publish Release to GitHub
+    needs: [build-macos-linux, build-windows-exe]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Unix Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: unix-artifacts
+          path: release_assets/
+
+      - name: Download Windows EXE Artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-exe-artifact
+          path: release_assets/
+
+      - name: List Release Files
+        run: ls -lh release_assets/
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -135,28 +201,30 @@ jobs:
           body: |
             ## 🚀 PostgreSQL DDL Studio ${{ github.ref_name }} Yayında!
             
-            PostgreSQL DDL Studio artık **macOS**, **Windows** ve **Linux** olmak üzere tüm ana işletim sistemlerinde yerel (native) başlatıcılarla çalışabilen tam teşekküllü **Çok Platformlu (Cross-Platform)** bir geliştirici stüdyosudur.
+            PostgreSQL DDL Studio artık **Windows** için tam otomatik Türkçe/İngilizce **Kurulum Sihirbazı (.exe Setup)**, **macOS** için yeni sürükle-bırak **.dmg** yükleyicisi ve **Linux** için hazır portable paket sunmaktadır.
             
             ### ✨ Öne Çıkan Özellikler:
             - **⚡ Evrensel Veritabanı & Docker Asistanı:** Docker konteynerlerini otomatik algılama, tek tıkla yeni demo PostgreSQL başlatma, Neon / Supabase / AWS RDS bağlantı dizelerini (URI) otomatik çözme ve test şeması yükleme (Seed Data).
+            - **🪟 Windows Native Kurulum Sihirbazı:** Kurulum dizini seçimi, Masaüstü ve Başlat Menüsü simgeleri, otomatik kaldırma aracı (Uninstaller) içeren modern `.exe` Setup.
             - **📂 İnteraktif Şema Gezgini:** Hiyerarşik ağaç, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme.
             - **🗺️ Görsel ERD Haritası:** Panning, zooming (%20-%300), sürüklenebilir tablo kartları, Bézier ilişkileri, Mermaid ve PNG dışa aktarma.
             - **🌐 Canlı Ortam Karşılaştırma (Diff):** Staging vs Production fark tespiti, otomatik dağıtım yaması (Deploy Patch) üretimi ve veri kaybı koruması.
             - **📊 Canlı Sunucu Durumu & Performans:** Bağlantı havuzu, toplam boyut, önbellek verimliliği (%99+), Java2D grafikleri ve sistem teşhisi.
             - **⏱️ Otomatik Zamanlanmış Yedekleme (Cron):** Arka planda sessiz DDL yedekleme, otomatik Git commit ve durdurma/başlatma kontrolü.
-            - **🛡️ Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve uzak SSL MitM koruması.
-            - **🎨 Çok Platformlu Yerel Tema Desteği:** İşletim sisteminizin açık/koyu temasını otomatik algılayan FlatLaf arayüzü.
+            - **🛡️ Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve AppPathHelper güvenli yapılandırma saklama.
             
             ---
             ### 📥 İndirme Paketleri (Binary Assets):
-            - 🍏 **macOS (.dmg):** `PostgreSQL-DDL-Studio-5.4.0-macOS.dmg`
-            - 🪟 **Windows (.zip):** `PostgreSQL-DDL-Studio-5.4.0-Windows.zip` (Sessiz .vbs & .bat başlatıcılı)
-            - 🐧 **Linux (.tar.gz):** `PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz` (.sh başlatıcı & .desktop entegrasyonu)
+            - 🪟 **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.4.0.exe` ⭐ *(Önerilen)*
+            - 🍏 **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.4.0-macOS.dmg`
+            - 🪟 **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.4.0-Windows.zip`
+            - 🐧 **Linux (.tar.gz):** `PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz`
             - ☕ **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
           files: |
-            PostgreSQL-DDL-Studio-5.4.0-macOS.dmg
-            PostgreSQL-DDL-Studio-5.4.0-Windows.zip
-            PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz
-            target/postgres_ddl_export_console_java-1.0.0.jar
+            release_assets/PostgreSQL-DDL-Studio-Setup-5.4.0.exe
+            release_assets/PostgreSQL-DDL-Studio-5.4.0-macOS.dmg
+            release_assets/PostgreSQL-DDL-Studio-5.4.0-Windows.zip
+            release_assets/PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz
+            release_assets/postgres_ddl_export_console_java-1.0.0.jar
           draft: false
           prerelease: false

@@ -21,7 +21,7 @@ public class ProfileManager {
 
     public synchronized void loadProfiles() {
         profiles.clear();
-        File file = new File(PROFILES_FILE);
+        File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(PROFILES_FILE);
         if (file.exists()) {
             try {
                 Map<String, PostgresqlConfigurationSettings> loaded = mapper.readValue(file,
@@ -69,7 +69,8 @@ public class ProfileManager {
                     secureCopy.put(entry.getKey(), copy);
                 }
             }
-            mapper.writeValue(new File(PROFILES_FILE), secureCopy);
+            File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(PROFILES_FILE);
+            mapper.writeValue(file, secureCopy);
         } catch (Exception e) {
             System.err.println("Profiller kaydedilemedi: " + e.getMessage());
         }

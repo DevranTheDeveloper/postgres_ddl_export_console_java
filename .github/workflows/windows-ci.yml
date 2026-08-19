@@ -1,4 +1,4 @@
-name: Windows Automated CI & Compatibility Test
+name: Windows Automated CI & Installer Build
 
 on:
   push:
@@ -9,7 +9,7 @@ on:
 
 jobs:
   test-windows:
-    name: Verify on Windows 2022 / Windows 11 Runner
+    name: Build Windows EXE Installer & Verify
     runs-on: windows-latest
 
     steps:
@@ -30,23 +30,33 @@ jobs:
           ver
           java -version
 
-      - name: Compile and Test on Windows
+      - name: Compile Fat JAR on Windows
         shell: cmd
         run: |
           echo "=== 🔨 WINDOWS UZERINDE MAVEN DERLEMESI ==="
           mvn clean package -DskipTests
 
-      - name: Verify Windows FAT JAR and Output Directory
+      - name: Verify Windows FAT JAR and Output
         shell: cmd
         run: |
           echo "=== 🧪 WINDOWS JAR TESTI ==="
           dir target\*.jar
           java -jar target\postgres_ddl_export_console_java-1.0.0.jar -help
 
-      - name: Verify Windows Packaging Files
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+
+      - name: Compile Windows EXE Setup Wizard
         shell: cmd
         run: |
-          if not exist "scripts\windows\PostgreSQL-DDL-Studio.bat" exit /b 1
-          if not exist "scripts\windows\PostgreSQL-DDL-Studio.vbs" exit /b 1
-          if not exist "src\main\resources\AppIcon.ico" exit /b 1
-          echo "✅ Windows dosyalari ve uyumlulugu eksiksiz dogrulandi!"
+          mkdir dist
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" scripts\windows\setup.iss
+          dir dist\*.exe
+
+      - name: Upload Windows Setup EXE Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PostgreSQL-DDL-Studio-Setup-Windows
+          path: dist/*.exe

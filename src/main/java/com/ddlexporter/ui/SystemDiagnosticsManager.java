@@ -155,7 +155,7 @@ public class SystemDiagnosticsManager {
     }
 
     private void loadIssues() {
-        File file = new File(STORAGE_FILE);
+        File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(STORAGE_FILE);
         if (!file.exists()) return;
         try {
             List<DiagnosticIssue> loaded = mapper.readValue(file, new TypeReference<List<DiagnosticIssue>>() {});
@@ -168,7 +168,8 @@ public class SystemDiagnosticsManager {
 
     private void saveIssues() {
         try {
-            mapper.writeValue(new File(STORAGE_FILE), issues);
+            File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(STORAGE_FILE);
+            mapper.writeValue(file, issues);
         } catch (Exception ignored) {}
     }
 }

@@ -353,7 +353,7 @@ public class MainFrame extends JFrame {
 
     private static boolean loadSavedThemePreference() {
         try {
-            File f = new File(PREF_FILE);
+            File f = com.ddlexporter.common.util.AppPathHelper.getConfigFile(PREF_FILE);
             if (f.exists()) {
                 String content = java.nio.file.Files.readString(f.toPath());
                 if (content.contains("\"darkMode\": true") || content.contains("\"darkMode\":true")) {
@@ -369,7 +369,8 @@ public class MainFrame extends JFrame {
     private static void saveThemePreference(boolean dark) {
         try {
             String json = "{\n  \"darkMode\": " + dark + "\n}\n";
-            java.nio.file.Files.writeString(new File(PREF_FILE).toPath(), json);
+            File f = com.ddlexporter.common.util.AppPathHelper.getConfigFile(PREF_FILE);
+            java.nio.file.Files.writeString(f.toPath(), json);
         } catch (Exception ignored) {}
     }
 

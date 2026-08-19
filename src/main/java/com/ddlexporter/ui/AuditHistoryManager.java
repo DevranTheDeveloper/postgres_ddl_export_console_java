@@ -46,7 +46,7 @@ public class AuditHistoryManager {
     }
 
     private void loadHistory() {
-        File file = new File(HISTORY_FILE);
+        File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(HISTORY_FILE);
         if (!file.exists()) return;
         try {
             List<AuditEntry> loaded = mapper.readValue(file, new TypeReference<List<AuditEntry>>() {});
@@ -59,7 +59,8 @@ public class AuditHistoryManager {
 
     private void saveHistory() {
         try {
-            mapper.writeValue(new File(HISTORY_FILE), entries);
+            File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(HISTORY_FILE);
+            mapper.writeValue(file, entries);
         } catch (Exception ignored) {}
     }
 
