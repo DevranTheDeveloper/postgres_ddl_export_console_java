@@ -19,11 +19,7 @@ else
     cp src/main/resources/AppIcon.icns "$RESOLVED_APP_PATH/Contents/Resources/AppIcon.icns"
     cp target/postgres_ddl_export_console_java-1.0.0.jar "$RESOLVED_APP_PATH/Contents/MacOS/app.jar"
     
-    cat << 'EOF' > "$RESOLVED_APP_PATH/Contents/MacOS/launcher"
-#!/bin/bash
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-java -Xdock:name="PostgreSQL DDL Studio" -jar "$DIR/app.jar"
-EOF
+    cp scripts/macos/launcher "$RESOLVED_APP_PATH/Contents/MacOS/launcher"
     chmod 755 "$RESOLVED_APP_PATH/Contents/MacOS/launcher"
     
     cat << 'EOF' > "$RESOLVED_APP_PATH/Contents/Info.plist"
