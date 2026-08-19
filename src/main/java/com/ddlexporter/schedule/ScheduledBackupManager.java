@@ -50,7 +50,7 @@ public class ScheduledBackupManager {
     }
 
     public synchronized void loadConfig() {
-        File file = new File(CONFIG_FILE);
+        File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(CONFIG_FILE);
         if (file.exists()) {
             try {
                 ScheduleConfig loaded = mapper.readValue(file, ScheduleConfig.class);
@@ -63,7 +63,8 @@ public class ScheduledBackupManager {
 
     public synchronized void saveConfig() {
         try {
-            mapper.writeValue(new File(CONFIG_FILE), config);
+            File file = com.ddlexporter.common.util.AppPathHelper.getConfigFile(CONFIG_FILE);
+            mapper.writeValue(file, config);
         } catch (Exception ignored) {}
     }
 
