@@ -71,17 +71,31 @@ jobs:
           </plist>
           EOF
           
-          # Build Professional DMG
+      - name: Build Professional Drag-and-Drop DMG Installer
+        run: |
+          brew install create-dmg || true
           OUTPUT_DMG="PostgreSQL-DDL-Studio-5.4.0-macOS.dmg"
-          APP_PATH="$APP_DIR"
-          /bin/bash scripts/macos/build_dmg.sh || {
-            STAGING="dmg_staging"
-            mkdir -p "$STAGING"
-            cp -R "$APP_DIR" "$STAGING/"
-            ln -s /Applications "$STAGING/Applications"
-            hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT_DMG"
-            rm -rf "$STAGING"
-          }
+          rm -f "$OUTPUT_DMG"
+          
+          create-dmg \
+            --volname "PostgreSQL DDL Studio" \
+            --volicon "src/main/resources/AppIcon.icns" \
+            --background "scripts/macos/dmg_bg.png" \
+            --window-pos 200 120 \
+            --window-size 600 400 \
+            --icon-size 110 \
+            --icon "PostgreSQL DDL Studio.app" 150 200 \
+            --hide-extension "PostgreSQL DDL Studio.app" \
+            --app-drop-link 450 200 \
+            "$OUTPUT_DMG" \
+            "PostgreSQL DDL Studio.app" || {
+              STAGING="dmg_staging"
+              mkdir -p "$STAGING"
+              cp -R "PostgreSQL DDL Studio.app" "$STAGING/"
+              ln -s /Applications "$STAGING/Applications"
+              hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT_DMG"
+              rm -rf "$STAGING"
+            }
 
       - name: Create Windows Portable ZIP
         run: |
