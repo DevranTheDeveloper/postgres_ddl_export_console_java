@@ -14,15 +14,38 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 public class ServerStatusPanel extends JPanel {
+    private static final String CARD_DISCONNECTED = "DISCONNECTED";
+    private static final String CARD_CONNECTED = "CONNECTED";
+
+    private final CardLayout rootCardLayout = new CardLayout();
+    private final JPanel rootCards = new JPanel(rootCardLayout);
+
     private final Supplier<PostgresqlConfigurationSettings> settingsSupplier;
     private final AuditHistoryManager auditManager;
     private final SystemDiagnosticsManager diagnosticsManager;
+    private Consumer<PostgresqlConfigurationSettings> onSettingsUpdate;
+
+    // --- Disconnected / Zero-State UI Components ---
+    private final JPanel disconnectedCard = new JPanel(new GridBagLayout());
+    private final JLabel disconnectedIcon = new JLabel("🔌");
+    private final JLabel disconnectedTitle = new JLabel("PostgreSQL Canlı Sunucu Durumu");
+    private final JLabel disconnectedSubtitle = new JLabel("Canlı metrikleri, bağlantı havuzunu ve aktif sorguları izlemek için sunucuya bağlanın.");
+    private final JLabel disconnectedTargetLabel = new JLabel("Hedef: localhost:5432 / postgres");
+    private final JLabel disconnectedErrorLabel = new JLabel("");
+    private final JButton connectNowBtn = new JButton("⚡ Sunucuya Bağlan & Metrikleri Göster");
+    private final JButton quickStartBtn = new JButton("🚀 Hızlı Başlangıç & Kurulum Asistanı");
+    private final JButton demoModeBtn = new JButton("🧪 Demo / Simülasyon Modu");
+    private JPanel disconnectedBox;
+
+    // --- Connected Live Dashboard Components ---
+    private final JPanel connectedPanel = new JPanel(new BorderLayout(10, 10));
 
     // Top KPI Labels
-    private final JLabel statusValueLabel = new JLabel("Bilinmiyor");
+    private final JLabel statusValueLabel = new JLabel("Çevrimiçi");
     private final JLabel versionLabel = new JLabel("PostgreSQL --");
     private final JLabel connectionsValueLabel = new JLabel("0 / 0");
     private final JLabel dbSizeValueLabel = new JLabel("0 MB");
@@ -51,14 +74,15 @@ public class ServerStatusPanel extends JPanel {
 
     private final JCheckBox autoRefreshBox = new JCheckBox("5 sn otomatik yenile", false);
     private final JButton refreshBtn = new JButton("Yenile");
-    private final JButton testModeBtn = new JButton("Canlı Testi Başlat");
-    private final JLabel lastUpdateLabel = new JLabel("Son Güncelleme: Henüz yapılmadı");
+    private final JButton disconnectBtn = new JButton("🔌 Bağlantıyı Kes");
+    private final JLabel lastUpdateLabel = new JLabel("Son Güncelleme: --:--:--");
 
     private Timer autoRefreshTimer;
     private Timer simulationTimer;
     private boolean isSimulationRunning = false;
     private int simulationStep = 0;
     private boolean isDark = false;
+    private boolean isConnected = false;
 
     private static class KpiCardView {
         final JPanel panel;
@@ -86,75 +110,14 @@ public class ServerStatusPanel extends JPanel {
         this.auditManager = auditManager;
         this.diagnosticsManager = diagnosticsManager;
 
-        setLayout(new BorderLayout(10, 10));
-        setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        setLayout(new BorderLayout());
         setOpaque(false);
 
-        // 1. Top Section: Header Toolbar + 5 KPI Cards
-        JPanel topContainer = new JPanel(new BorderLayout(0, 8));
-        topContainer.setOpaque(false);
+        // 1. Build Disconnected Zero-State Screen
+        buildDisconnectedUi();
 
-        // Header Toolbar
-        JPanel headerToolbar = new JPanel(new BorderLayout());
-        headerToolbar.setOpaque(false);
-        JLabel title = new JLabel("PostgreSQL Canlı Sunucu Durumu & Metrikler");
-        title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
-        headerToolbar.add(title, BorderLayout.WEST);
-
-        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
-        controls.setOpaque(false);
-        controls.add(lastUpdateLabel);
-        controls.add(autoRefreshBox);
-
-        JButton dockerWizardBtn = new JButton("Hızlı Başlangıç & Kurulum");
-        dockerWizardBtn.setFont(dockerWizardBtn.getFont().deriveFont(Font.BOLD, 12f));
-        dockerWizardBtn.addActionListener(e -> openDockerWizard());
-        controls.add(dockerWizardBtn);
-
-        testModeBtn.setFont(testModeBtn.getFont().deriveFont(Font.BOLD, 12f));
-        testModeBtn.addActionListener(e -> toggleSimulationTest());
-        controls.add(testModeBtn);
-
-        refreshBtn.setFont(refreshBtn.getFont().deriveFont(Font.BOLD, 12f));
-        refreshBtn.addActionListener(e -> {
-            if (isSimulationRunning) stopSimulationTest();
-            refreshMetrics();
-        });
-        controls.add(refreshBtn);
-        headerToolbar.add(controls, BorderLayout.EAST);
-        topContainer.add(headerToolbar, BorderLayout.NORTH);
-
-        // 5 KPI Cards Grid (Equal Width)
-        JPanel cardsGrid = new JPanel(new GridLayout(1, 5, 8, 0));
-        cardsGrid.setOpaque(false);
-        cardsGrid.setPreferredSize(new Dimension(0, 85));
-
-        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel, this::openDockerWizard));
-        cardsGrid.add(createKpiCard("Aktif Bağlantılar", connectionsValueLabel, new JLabel("Havuz Kapasitesi"), null));
-        cardsGrid.add(createKpiCard("Veritabanı Boyutu", dbSizeValueLabel, new JLabel("Toplam Disk Alanı"), null));
-        cardsGrid.add(createKpiCard("Cache Hit (Önbellek)", cacheHitValueLabel, txStatsLabel, null));
-
-        // Clickable 5th Card: System Diagnostics & Health Center
-        JPanel diagnosticsCard = createKpiCard("Sistem Sağlığı & Uyarılar", diagnosticsValueLabel, diagnosticsSubLabel, this::openDiagnosticsDialog);
-        cardsGrid.add(diagnosticsCard);
-
-        topContainer.add(cardsGrid, BorderLayout.CENTER);
-        add(topContainer, BorderLayout.NORTH);
-
-        // 2. Center Split: Left Chart | Right 4-Tab Detailed Inspector
-        JPanel centerContainer = new JPanel(new GridLayout(1, 2, 12, 0));
-        centerContainer.setOpaque(false);
-
-        // Left: Visual Metrics Chart
-        JPanel chartWrapper = new JPanel(new BorderLayout());
-        chartWrapper.setBorder(BorderFactory.createTitledBorder("İşlem & Önbellek Performans Grafiği"));
-        chartWrapper.add(chartPanel, BorderLayout.CENTER);
-        centerContainer.add(chartWrapper);
-
-        // Right: 4-Tab Detailed Inspector
-        detailsTabbedPane = new JTabbedPane();
-
-        // --- Sub-Tab 1: Active Queries (pg_stat_activity) ---
+        // 2. Build Connected Live Dashboard
+        // Table Models
         String[] activityCols = {"PID", "Kullanıcı", "İstemci", "Durum", "Sorgu"};
         activityTableModel = new DefaultTableModel(activityCols, 0) {
             @Override
@@ -162,9 +125,7 @@ public class ServerStatusPanel extends JPanel {
         };
         activityTable = new JTable(activityTableModel);
         setupTableStyle(activityTable);
-        detailsTabbedPane.addTab("Canlı Oturumlar (" + activityTableModel.getRowCount() + ")", new JScrollPane(activityTable));
 
-        // --- Sub-Tab 2: Top Tables by Size ---
         String[] tableCols = {"Tablo Adı", "Toplam Boyut", "Satır Sayısı (Yaklaşık)", "Şema"};
         topTablesModel = new DefaultTableModel(tableCols, 0) {
             @Override
@@ -172,9 +133,7 @@ public class ServerStatusPanel extends JPanel {
         };
         topTablesTable = new JTable(topTablesModel);
         setupTableStyle(topTablesTable);
-        detailsTabbedPane.addTab("Tablo Boyutları", new JScrollPane(topTablesTable));
 
-        // --- Sub-Tab 3: Audit / Export History ---
         String[] historyCols = {"Zaman", "Kullanıcı", "İşlem", "Detay", "Süre", "Durum"};
         historyTableModel = new DefaultTableModel(historyCols, 0) {
             @Override
@@ -199,21 +158,6 @@ public class ServerStatusPanel extends JPanel {
             }
         });
 
-        JPanel historyTabPanel = new JPanel(new BorderLayout(0, 4));
-        historyTabPanel.add(new JScrollPane(historyTable), BorderLayout.CENTER);
-
-        JButton clearHistoryBtn = new JButton("Geçmişi Temizle");
-        clearHistoryBtn.setFont(clearHistoryBtn.getFont().deriveFont(Font.PLAIN, 11f));
-        clearHistoryBtn.addActionListener(e -> {
-            auditManager.clearHistory();
-            loadAuditHistory();
-        });
-        JPanel historyFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
-        historyFooter.add(clearHistoryBtn);
-        historyTabPanel.add(historyFooter, BorderLayout.SOUTH);
-        detailsTabbedPane.addTab("İşlem Geçmişi", historyTabPanel);
-
-        // --- Sub-Tab 4: Direct System Diagnostics ---
         String[] diagCols = {"Seviye", "Zaman", "Başlık", "Kaynak"};
         diagnosticsTableModel = new DefaultTableModel(diagCols, 0) {
             @Override
@@ -238,6 +182,197 @@ public class ServerStatusPanel extends JPanel {
             }
         });
 
+        detailsTabbedPane = new JTabbedPane();
+        buildConnectedUi();
+
+        // 3. Assemble Root Card Layout
+        rootCards.setOpaque(false);
+        rootCards.add(disconnectedCard, CARD_DISCONNECTED);
+        rootCards.add(connectedPanel, CARD_CONNECTED);
+        add(rootCards, BorderLayout.CENTER);
+
+        // Listen for diagnostics updates
+        diagnosticsManager.addListener(this::updateDiagnosticsUi);
+
+        // Auto-Refresh Timer (Only runs when connected)
+        autoRefreshTimer = new Timer(5000, e -> {
+            if (isConnected && autoRefreshBox.isSelected() && isShowing() && !isSimulationRunning) {
+                refreshMetrics();
+            }
+        });
+        autoRefreshTimer.start();
+
+        // Start in disconnected zero-state by default
+        showDisconnectedState(null);
+    }
+
+    private void buildDisconnectedUi() {
+        disconnectedCard.setOpaque(false);
+
+        disconnectedBox = new JPanel();
+        disconnectedBox.setLayout(new BoxLayout(disconnectedBox, BoxLayout.Y_AXIS));
+        disconnectedBox.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(60, 65, 78), 1, true),
+                BorderFactory.createEmptyBorder(32, 48, 32, 48)
+        ));
+
+        // Icon
+        disconnectedIcon.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 48));
+        disconnectedIcon.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Title
+        disconnectedTitle.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+        disconnectedTitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Subtitle
+        disconnectedSubtitle.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        disconnectedSubtitle.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        // Target Info Pill
+        disconnectedTargetLabel.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
+        disconnectedTargetLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        disconnectedTargetLabel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(75, 82, 95), 1, true),
+                BorderFactory.createEmptyBorder(6, 14, 6, 14)
+        ));
+
+        // Error Message Label
+        disconnectedErrorLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
+        disconnectedErrorLabel.setForeground(new Color(239, 68, 68));
+        disconnectedErrorLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+        disconnectedErrorLabel.setVisible(false);
+
+        // Connect Now Button (Primary)
+        connectNowBtn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        connectNowBtn.setPreferredSize(new Dimension(320, 38));
+        connectNowBtn.setMaximumSize(new Dimension(340, 38));
+        connectNowBtn.setAlignmentX(Component.CENTER_ALIGNMENT);
+        connectNowBtn.setFocusable(false);
+        connectNowBtn.addActionListener(e -> {
+            updateTargetLabel();
+            refreshMetrics();
+        });
+
+        // Action Buttons Row
+        JPanel actionsRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        actionsRow.setOpaque(false);
+        actionsRow.setAlignmentX(Component.CENTER_ALIGNMENT);
+
+        quickStartBtn.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        quickStartBtn.setFocusable(false);
+        quickStartBtn.addActionListener(e -> openDockerWizard());
+
+        demoModeBtn.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        demoModeBtn.setFocusable(false);
+        demoModeBtn.addActionListener(e -> startSimulationTest());
+
+        actionsRow.add(quickStartBtn);
+        actionsRow.add(demoModeBtn);
+
+        // Add to box with spacing
+        disconnectedBox.add(disconnectedIcon);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 12)));
+        disconnectedBox.add(disconnectedTitle);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 8)));
+        disconnectedBox.add(disconnectedSubtitle);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 16)));
+        disconnectedBox.add(disconnectedTargetLabel);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 12)));
+        disconnectedBox.add(disconnectedErrorLabel);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 16)));
+        disconnectedBox.add(connectNowBtn);
+        disconnectedBox.add(Box.createRigidArea(new Dimension(0, 14)));
+        disconnectedBox.add(actionsRow);
+
+        disconnectedCard.add(disconnectedBox);
+    }
+
+    private void buildConnectedUi() {
+        connectedPanel.setBorder(BorderFactory.createEmptyBorder(10, 12, 10, 12));
+        connectedPanel.setOpaque(false);
+
+        // 1. Top Section: Header Toolbar + 5 KPI Cards
+        JPanel topContainer = new JPanel(new BorderLayout(0, 8));
+        topContainer.setOpaque(false);
+
+        // Header Toolbar
+        JPanel headerToolbar = new JPanel(new BorderLayout());
+        headerToolbar.setOpaque(false);
+        JLabel title = new JLabel("PostgreSQL Canlı Sunucu Durumu & Metrikler");
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 14f));
+        headerToolbar.add(title, BorderLayout.WEST);
+
+        JPanel controls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        controls.setOpaque(false);
+        controls.add(lastUpdateLabel);
+        controls.add(autoRefreshBox);
+
+        JButton dockerWizardBtn = new JButton("Hızlı Kurulum");
+        dockerWizardBtn.setFont(dockerWizardBtn.getFont().deriveFont(Font.BOLD, 12f));
+        dockerWizardBtn.addActionListener(e -> openDockerWizard());
+        controls.add(dockerWizardBtn);
+
+        refreshBtn.setFont(refreshBtn.getFont().deriveFont(Font.BOLD, 12f));
+        refreshBtn.addActionListener(e -> {
+            if (isSimulationRunning) stopSimulationTest();
+            refreshMetrics();
+        });
+        controls.add(refreshBtn);
+
+        disconnectBtn.setFont(disconnectBtn.getFont().deriveFont(Font.BOLD, 12f));
+        disconnectBtn.addActionListener(e -> {
+            if (isSimulationRunning) stopSimulationTest();
+            showDisconnectedState(null);
+        });
+        controls.add(disconnectBtn);
+
+        headerToolbar.add(controls, BorderLayout.EAST);
+        topContainer.add(headerToolbar, BorderLayout.NORTH);
+
+        // 5 KPI Cards Grid (Equal Width)
+        JPanel cardsGrid = new JPanel(new GridLayout(1, 5, 8, 0));
+        cardsGrid.setOpaque(false);
+        cardsGrid.setPreferredSize(new Dimension(0, 85));
+
+        cardsGrid.add(createKpiCard("Sunucu Durumu", statusValueLabel, versionLabel, this::openDockerWizard));
+        cardsGrid.add(createKpiCard("Aktif Bağlantılar", connectionsValueLabel, new JLabel("Havuz Kapasitesi"), null));
+        cardsGrid.add(createKpiCard("Veritabanı Boyutu", dbSizeValueLabel, new JLabel("Toplam Disk Alanı"), null));
+        cardsGrid.add(createKpiCard("Cache Hit (Önbellek)", cacheHitValueLabel, txStatsLabel, null));
+
+        JPanel diagnosticsCard = createKpiCard("Sistem Sağlığı & Uyarılar", diagnosticsValueLabel, diagnosticsSubLabel, this::openDiagnosticsDialog);
+        cardsGrid.add(diagnosticsCard);
+
+        topContainer.add(cardsGrid, BorderLayout.CENTER);
+        connectedPanel.add(topContainer, BorderLayout.NORTH);
+
+        // 2. Center Split: Left Chart | Right 4-Tab Detailed Inspector
+        JPanel centerContainer = new JPanel(new GridLayout(1, 2, 12, 0));
+        centerContainer.setOpaque(false);
+
+        // Left: Visual Metrics Chart
+        JPanel chartWrapper = new JPanel(new BorderLayout());
+        chartWrapper.setBorder(BorderFactory.createTitledBorder("İşlem & Önbellek Performans Grafiği"));
+        chartWrapper.add(chartPanel, BorderLayout.CENTER);
+        centerContainer.add(chartWrapper);
+
+        // Right: 4-Tab Detailed Inspector
+        detailsTabbedPane.addTab("Canlı Oturumlar (" + activityTableModel.getRowCount() + ")", new JScrollPane(activityTable));
+        detailsTabbedPane.addTab("Tablo Boyutları", new JScrollPane(topTablesTable));
+
+        JPanel historyTabPanel = new JPanel(new BorderLayout(0, 4));
+        historyTabPanel.add(new JScrollPane(historyTable), BorderLayout.CENTER);
+
+        JButton clearHistoryBtn = new JButton("Geçmişi Temizle");
+        clearHistoryBtn.setFont(clearHistoryBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        clearHistoryBtn.addActionListener(e -> {
+            auditManager.clearHistory();
+            loadAuditHistory();
+        });
+        JPanel historyFooter = new JPanel(new FlowLayout(FlowLayout.RIGHT, 4, 2));
+        historyFooter.add(clearHistoryBtn);
+        historyTabPanel.add(historyFooter, BorderLayout.SOUTH);
+        detailsTabbedPane.addTab("İşlem Geçmişi", historyTabPanel);
+
         JPanel diagTabPanel = new JPanel(new BorderLayout(0, 4));
         diagTabPanel.add(new JScrollPane(diagnosticsTable), BorderLayout.CENTER);
 
@@ -251,20 +386,36 @@ public class ServerStatusPanel extends JPanel {
         detailsTabbedPane.addTab("Uyarı & Hatalar (0)", diagTabPanel);
 
         centerContainer.add(detailsTabbedPane);
-        add(centerContainer, BorderLayout.CENTER);
+        connectedPanel.add(centerContainer, BorderLayout.CENTER);
+    }
 
-        // Listen for diagnostics updates
-        diagnosticsManager.addListener(this::updateDiagnosticsUi);
+    private void updateTargetLabel() {
+        PostgresqlConfigurationSettings settings = settingsSupplier.get();
+        if (settings != null) {
+            disconnectedTargetLabel.setText(String.format("Hedef: %s:%d  |  Veritabanı: %s  |  Kullanıcı: %s",
+                    settings.getServerHost(), settings.getPort(), settings.getDatabaseName(), settings.getUsername()));
+        }
+    }
 
-        // Timer for auto-refresh
-        autoRefreshTimer = new Timer(5000, e -> {
-            if (autoRefreshBox.isSelected() && isShowing() && !isSimulationRunning) {
-                refreshMetrics();
-            }
-        });
-        autoRefreshTimer.start();
-        loadAuditHistory();
-        updateDiagnosticsUi();
+    public void showDisconnectedState(String errorMessage) {
+        isConnected = false;
+        updateTargetLabel();
+
+        if (errorMessage != null && !errorMessage.isBlank()) {
+            disconnectedErrorLabel.setText("⚠️ Bağlantı Başarısız: " + errorMessage);
+            disconnectedErrorLabel.setVisible(true);
+        } else {
+            disconnectedErrorLabel.setVisible(false);
+        }
+
+        connectNowBtn.setEnabled(true);
+        connectNowBtn.setText("⚡ Sunucuya Bağlan & Metrikleri Göster");
+        rootCardLayout.show(rootCards, CARD_DISCONNECTED);
+    }
+
+    public void showConnectedState() {
+        isConnected = true;
+        rootCardLayout.show(rootCards, CARD_CONNECTED);
     }
 
     private void setupTableStyle(JTable table) {
@@ -281,72 +432,62 @@ public class ServerStatusPanel extends JPanel {
         ));
         card.setBackground(isDark ? new Color(34, 37, 46) : Color.WHITE);
 
-        JLabel titleLbl = new JLabel(title);
-        titleLbl.setFont(titleLbl.getFont().deriveFont(Font.BOLD, 11f));
-        titleLbl.setForeground(isDark ? new Color(160, 170, 185) : new Color(100, 105, 115));
-        card.add(titleLbl, BorderLayout.NORTH);
+        JLabel titleLabel = new JLabel(title);
+        titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 11));
+        titleLabel.setForeground(isDark ? new Color(160, 170, 185) : new Color(100, 105, 115));
 
-        mainLabel.setFont(mainLabel.getFont().deriveFont(Font.BOLD, 16f));
-        mainLabel.setForeground(isDark ? new Color(240, 245, 255) : new Color(25, 30, 40));
-        card.add(mainLabel, BorderLayout.CENTER);
-
-        subLabel.setFont(subLabel.getFont().deriveFont(Font.PLAIN, 10f));
+        mainLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+        subLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
         subLabel.setForeground(isDark ? new Color(130, 135, 150) : new Color(120, 125, 135));
-        card.add(subLabel, BorderLayout.SOUTH);
 
-        boolean isCustomColor = (mainLabel == statusValueLabel || mainLabel == cacheHitValueLabel || mainLabel == diagnosticsValueLabel);
-        kpiCards.add(new KpiCardView(card, titleLbl, mainLabel, subLabel, onClick, isCustomColor));
+        JPanel textPanel = new JPanel(new GridLayout(2, 1, 0, 2));
+        textPanel.setOpaque(false);
+        textPanel.add(mainLabel);
+        textPanel.add(subLabel);
+
+        card.add(titleLabel, BorderLayout.NORTH);
+        card.add(textPanel, BorderLayout.CENTER);
+
+        boolean customColor = (mainLabel == statusValueLabel || mainLabel == diagnosticsValueLabel);
 
         if (onClick != null) {
-            card.setCursor(new Cursor(Cursor.HAND_CURSOR));
+            card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             card.addMouseListener(new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     onClick.run();
                 }
-
                 @Override
                 public void mouseEntered(MouseEvent e) {
-                    card.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(new Color(59, 130, 246), 1, true),
-                            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-                    ));
+                    card.setBackground(isDark ? new Color(42, 46, 58) : new Color(240, 243, 250));
                 }
-
                 @Override
                 public void mouseExited(MouseEvent e) {
-                    card.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createLineBorder(isDark ? new Color(55, 60, 72) : new Color(210, 215, 225), 1, true),
-                            BorderFactory.createEmptyBorder(8, 10, 8, 10)
-                    ));
+                    card.setBackground(isDark ? new Color(34, 37, 46) : Color.WHITE);
                 }
             });
         }
 
+        kpiCards.add(new KpiCardView(card, titleLabel, mainLabel, subLabel, onClick, customColor));
         return card;
     }
 
-    private java.util.function.Consumer<PostgresqlConfigurationSettings> onSettingsUpdate;
-
-    public void setOnSettingsUpdate(java.util.function.Consumer<PostgresqlConfigurationSettings> onSettingsUpdate) {
+    public void setOnSettingsUpdate(Consumer<PostgresqlConfigurationSettings> onSettingsUpdate) {
         this.onSettingsUpdate = onSettingsUpdate;
     }
 
-    public void openDockerWizard() {
-        Window ancestor = SwingUtilities.getWindowAncestor(this);
+    private void openDockerWizard() {
+        Container ancestor = SwingUtilities.getWindowAncestor(this);
         Frame ownerFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
-        UniversalDatabaseHubDialog dialog = new UniversalDatabaseHubDialog(ownerFrame,
-                newSettings -> {
-                    if (onSettingsUpdate != null) {
-                        onSettingsUpdate.accept(newSettings);
-                    }
-                },
-                this::refreshMetrics);
-        dialog.setVisible(true);
+        new UniversalDatabaseHubDialog(ownerFrame, s -> {
+            if (onSettingsUpdate != null) {
+                onSettingsUpdate.accept(s);
+            }
+        }, this::refreshMetrics).setVisible(true);
     }
 
     private void openDiagnosticsDialog() {
-        Window ancestor = SwingUtilities.getWindowAncestor(this);
+        Container ancestor = SwingUtilities.getWindowAncestor(this);
         Frame ownerFrame = (ancestor instanceof Frame) ? (Frame) ancestor : null;
         new DiagnosticsDialog(ownerFrame, diagnosticsManager, isDark).setVisible(true);
         updateDiagnosticsUi();
@@ -372,7 +513,9 @@ public class ServerStatusPanel extends JPanel {
             diagnosticsSubLabel.setText("Detaylar için tıklayın ↗");
         }
 
-        detailsTabbedPane.setTitleAt(3, "Uyarı & Hatalar (" + (activeErrs + activeWarns) + ")");
+        if (detailsTabbedPane.getTabCount() >= 4) {
+            detailsTabbedPane.setTitleAt(3, "Uyarı & Hatalar (" + (activeErrs + activeWarns) + ")");
+        }
 
         diagnosticsTableModel.setRowCount(0);
         for (SystemDiagnosticsManager.DiagnosticIssue issue : diagnosticsManager.getAllIssues()) {
@@ -394,20 +537,12 @@ public class ServerStatusPanel extends JPanel {
         }
     }
 
-    private void toggleSimulationTest() {
-        if (isSimulationRunning) {
-            stopSimulationTest();
-            refreshMetrics();
-        } else {
-            startSimulationTest();
-        }
-    }
-
     private void startSimulationTest() {
         isSimulationRunning = true;
         simulationStep = 0;
-        testModeBtn.setText("Testi Durdur");
+        showConnectedState();
 
+        if (simulationTimer != null) simulationTimer.stop();
         simulationTimer = new Timer(900, e -> {
             simulationStep++;
             runSimulationStep(simulationStep);
@@ -425,16 +560,15 @@ public class ServerStatusPanel extends JPanel {
             simulationTimer.stop();
             simulationTimer = null;
         }
-        testModeBtn.setText("Canlı Testi Başlat");
     }
 
     private void runSimulationStep(int step) {
         java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
-        lastUpdateLabel.setText("Test Çalışıyor (Adım " + (step + 1) + "/12) - " + java.time.LocalTime.now().format(dtf));
+        lastUpdateLabel.setText("Demo Modu (Adım " + (step + 1) + "/12) - " + java.time.LocalTime.now().format(dtf));
 
         statusValueLabel.setText("Çevrimiçi (Simülasyon)");
         statusValueLabel.setForeground(new Color(22, 163, 74));
-        versionLabel.setText("PostgreSQL 16.2 Test Modu");
+        versionLabel.setText("PostgreSQL 16.2 Demo");
 
         int maxConns = 100;
         int activeConns;
@@ -464,26 +598,12 @@ public class ServerStatusPanel extends JPanel {
                 activityTableModel.addRow(new Object[]{1050, "batch_job", "10.0.1.10", "active", "VACUUM ANALYZE public.products"});
                 activityTableModel.addRow(new Object[]{1055, "api_gateway", "10.0.0.5", "active", "SELECT * FROM orders FOR UPDATE"});
                 activityTableModel.addRow(new Object[]{1060, "api_gateway", "10.0.0.7", "active", "INSERT INTO audit_logs (action, time) VALUES ('EXPORT', now())"});
-                if (diagnosticsManager.getActiveWarningCount() == 0) {
-                    diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.WARN,
-                            "'customers_archive' tablosunda Primary Key eksik",
-                            "DDL Scripter Motoru",
-                            "Tablo taranırken birincil anahtar kısıtlaması bulunamadı. Replikasyon ve performans sorunlarına yol açabilir.",
-                            "ALTER TABLE public.customers_archive ADD PRIMARY KEY (id);");
-                }
                 break;
             default:
                 activeConns = 94; commits = 28400; rollbacks = 1250; blksHit = 510000; blksRead = 48000; dbSize = "68.4 MB";
                 activityTableModel.addRow(new Object[]{1080, "stress_test", "127.0.0.1", "active", "SELECT generate_series(1, 100000), random()"});
                 activityTableModel.addRow(new Object[]{1085, "api_cluster", "10.0.0.12", "active", "INSERT INTO orders SELECT * FROM staging_orders"});
                 activityTableModel.addRow(new Object[]{1090, "api_cluster", "10.0.0.14", "waiting", "LOCK TABLE products IN EXCLUSIVE MODE"});
-                if (diagnosticsManager.getActiveErrorCount() == 0) {
-                    diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
-                            "Bağlantı Havuzu Kritik Doluluk Seviyesinde (%94)",
-                            "PostgreSQL Bağlantı Havuzu",
-                            "Aktif bağlantı sayısı 94/100 limitine yaklaştı. Yeni gelen istemci bağlantıları reddedilebilir veya kilitlenebilir.",
-                            "max_connections parametresini yükseltin veya PgBouncer benzeri bir connection pooler devreye alın.");
-                }
                 break;
         }
 
@@ -504,10 +624,13 @@ public class ServerStatusPanel extends JPanel {
 
     public void refreshMetrics() {
         PostgresqlConfigurationSettings settings = settingsSupplier.get();
-        if (settings == null) return;
+        if (settings == null) {
+            showDisconnectedState("Bağlantı ayarları bulunamadı.");
+            return;
+        }
 
-        loadAuditHistory();
-        updateDiagnosticsUi();
+        connectNowBtn.setEnabled(false);
+        connectNowBtn.setText("Bağlanıyor...");
         refreshBtn.setEnabled(false);
 
         new SwingWorker<Void, Void>() {
@@ -621,10 +744,15 @@ public class ServerStatusPanel extends JPanel {
             @Override
             protected void done() {
                 refreshBtn.setEnabled(true);
+                connectNowBtn.setEnabled(true);
+                connectNowBtn.setText("⚡ Sunucuya Bağlan & Metrikleri Göster");
+
                 java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
                 lastUpdateLabel.setText("Son Güncelleme: " + java.time.LocalTime.now().format(dtf));
 
                 if (isOnline) {
+                    showConnectedState();
+
                     statusValueLabel.setText("Çevrimiçi");
                     statusValueLabel.setForeground(new Color(22, 163, 74));
                     versionLabel.setText(serverVersion);
@@ -650,33 +778,11 @@ public class ServerStatusPanel extends JPanel {
                         topTablesModel.addRow(row);
                     }
 
-                    // Check for potential warnings
-                    if (pct >= 85) {
-                        diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.WARN,
-                                "Yüksek Bağlantı Havuzu Kullanımı (%" + pct + ")",
-                                "PostgreSQL Havuzu",
-                                "Bağlantı sayısı " + activeConns + "/" + maxConns + " seviyesine ulaştı.",
-                                "Bağlantı limitini kontrol edin.");
-                    }
+                    loadAuditHistory();
+                    updateDiagnosticsUi();
                 } else {
-                    statusValueLabel.setText("Bağlantı Yok");
-                    statusValueLabel.setForeground(new Color(220, 38, 38));
-                    versionLabel.setText("Erişilemedi");
-                    connectionsValueLabel.setText("-- / --");
-                    dbSizeValueLabel.setText("--");
-                    cacheHitValueLabel.setText("--");
-                    activityTableModel.setRowCount(0);
-                    topTablesModel.setRowCount(0);
-
-                    if (connError != null) {
-                        diagnosticsManager.addIssue(SystemDiagnosticsManager.Level.ERROR,
-                                "Veritabanı Sunucusuna Bağlanılamadı",
-                                "JDBC Sürücüsü",
-                                "Sunucu adresi veya kimlik bilgileri doğrulanamadı:\n" + connError,
-                                "PostgreSQL servisinin çalıştığından ve şifrenin doğruluğundan emin olun.");
-                    }
+                    showDisconnectedState(connError);
                 }
-                updateDiagnosticsUi();
             }
         }.execute();
     }
@@ -690,6 +796,17 @@ public class ServerStatusPanel extends JPanel {
         Color titleFg = isDark ? new Color(160, 170, 185) : new Color(100, 105, 115);
         Color subFg = isDark ? new Color(130, 135, 150) : new Color(120, 125, 135);
         Color defaultMainFg = isDark ? new Color(240, 245, 255) : new Color(25, 30, 40);
+
+        if (disconnectedBox != null) {
+            disconnectedBox.setBackground(cardBg);
+            disconnectedBox.setBorder(BorderFactory.createCompoundBorder(
+                    BorderFactory.createLineBorder(cardBorder, 1, true),
+                    BorderFactory.createEmptyBorder(32, 48, 32, 48)
+            ));
+            disconnectedTitle.setForeground(defaultMainFg);
+            disconnectedSubtitle.setForeground(subFg);
+            disconnectedTargetLabel.setForeground(titleFg);
+        }
 
         for (KpiCardView kpi : kpiCards) {
             kpi.panel.setBackground(cardBg);
@@ -774,15 +891,17 @@ public class ServerStatusPanel extends JPanel {
             g2.drawString("İşlem Başarısı (Transactions)", 16, startY);
 
             long totalTx = commits + rollbacks;
-            double commitPct = totalTx > 0 ? ((double) commits / totalTx) * 100.0 : 100.0;
-            double rollbackPct = 100.0 - commitPct;
+            double commitPct = totalTx > 0 ? ((double) commits / totalTx) * 100.0 : 0.0;
+            double rollbackPct = totalTx > 0 ? 100.0 - commitPct : 0.0;
 
             g2.setColor(trackBg);
             g2.fillRoundRect(16, startY + 8, halfW, 20, 8, 8);
 
-            int commitBarW = (int) Math.round((commitPct / 100.0) * halfW);
-            g2.setColor(new Color(34, 197, 94));
-            g2.fillRoundRect(16, startY + 8, commitBarW, 20, 8, 8);
+            if (commitPct > 0) {
+                int commitBarW = (int) Math.round((commitPct / 100.0) * halfW);
+                g2.setColor(new Color(34, 197, 94));
+                g2.fillRoundRect(16, startY + 8, commitBarW, 20, 8, 8);
+            }
 
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
             g2.setColor(subColor);
@@ -795,18 +914,20 @@ public class ServerStatusPanel extends JPanel {
             g2.drawString("Önbellek Verimliliği (Cache vs Disk I/O)", 16, secondY);
 
             long totalBlks = blksHit + blksRead;
-            double hitPct = totalBlks > 0 ? ((double) blksHit / totalBlks) * 100.0 : 100.0;
+            double hitPct = totalBlks > 0 ? ((double) blksHit / totalBlks) * 100.0 : 0.0;
 
             g2.setColor(trackBg);
             g2.fillRoundRect(16, secondY + 8, halfW, 20, 8, 8);
 
-            int hitBarW = (int) Math.round((hitPct / 100.0) * halfW);
-            g2.setColor(new Color(59, 130, 246));
-            g2.fillRoundRect(16, secondY + 8, hitBarW, 20, 8, 8);
+            if (hitPct > 0) {
+                int hitBarW = (int) Math.round((hitPct / 100.0) * halfW);
+                g2.setColor(new Color(59, 130, 246));
+                g2.fillRoundRect(16, secondY + 8, hitBarW, 20, 8, 8);
+            }
 
             g2.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 11));
             g2.setColor(subColor);
-            g2.drawString(String.format("Bellekten Okuma: %%%.1f  |  Diskten Okuma: %%%.1f", hitPct, (100.0 - hitPct)), 16, secondY + 44);
+            g2.drawString(String.format("Bellekten Okuma: %%%.1f  |  Diskten Okuma: %%%.1f", hitPct, (totalBlks > 0 ? (100.0 - hitPct) : 0.0)), 16, secondY + 44);
 
             // 3. Right Side: Connection Pool Usage Gauge Ring
             int rightX = halfW + 40;
@@ -822,16 +943,18 @@ public class ServerStatusPanel extends JPanel {
             g2.setColor(trackBg);
             g2.drawArc(gaugeX, gaugeY, gaugeSize, gaugeSize, 0, 360);
 
-            double connPct = maxConns > 0 ? ((double) activeConns / maxConns) : 0.05;
+            double connPct = maxConns > 0 ? ((double) activeConns / maxConns) : 0.0;
             int arcAngle = (int) Math.round(connPct * 360.0);
             g2.setColor(connPct < 0.7 ? new Color(34, 197, 94) : (connPct < 0.9 ? new Color(245, 158, 11) : new Color(239, 68, 68)));
             g2.drawArc(gaugeX, gaugeY, gaugeSize, gaugeSize, 90, -arcAngle);
 
             g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
             g2.setColor(textColor);
-            String centerTxt = "%" + (int) Math.round(connPct * 100);
+            String pctText = String.format("%%%d", (int) Math.round(connPct * 100.0));
             FontMetrics fm = g2.getFontMetrics();
-            g2.drawString(centerTxt, gaugeX + (gaugeSize - fm.stringWidth(centerTxt)) / 2, gaugeY + (gaugeSize / 2) + 6);
+            int textX = gaugeX + (gaugeSize - fm.stringWidth(pctText)) / 2;
+            int textY = gaugeY + (gaugeSize + fm.getAscent() - fm.getDescent()) / 2;
+            g2.drawString(pctText, textX, textY);
 
             g2.dispose();
         }

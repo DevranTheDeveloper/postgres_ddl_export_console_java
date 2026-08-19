@@ -568,6 +568,7 @@ public class MainFrame extends JFrame {
                         + settings.getPort() + "/" + settings.getDatabaseName() + ")");
                 schemaExplorerPanel.focusDatabase(settings.getDatabaseName());
                 erDiagramPanel.setDatabase(connectionPanel.getOutputDir(), settings.getDatabaseName());
+                serverStatusPanel.showDisconnectedState(null);
             }
         }
     }
