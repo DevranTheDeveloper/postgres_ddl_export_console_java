@@ -55,9 +55,9 @@ Source: "..\..\src\main\resources\AppIcon.ico"; DestDir: "{app}"; Flags: ignorev
 Source: "README-Windows.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; IconFilename: "{app}\AppIcon.ico"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.bat"; IconFilename: "{app}\AppIcon.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; IconFilename: "{app}\AppIcon.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.bat"; IconFilename: "{app}\AppIcon.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec postinstall nowait skipifsilent
+Filename: "{app}\PostgreSQL-DDL-Studio.bat"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec postinstall nowait skipifsilent
