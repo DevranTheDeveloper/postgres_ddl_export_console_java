@@ -20,10 +20,10 @@ public class ConnectionPanel extends JPanel {
     private final JTextField hostField = new JTextField("localhost");
     private final JTextField portField = new JTextField("5432");
     private final JTextField userField = new JTextField("postgres");
-    private final JPasswordField passField = new JPasswordField("12345");
+    private final JPasswordField passField = new JPasswordField("");
     private final JComboBox<String> sslModeBox = new JComboBox<>(new String[]{"Devre Dışı (disable)", "Tercih Et (prefer)", "Zorunlu (require)"});
 
-    private final JTextField dbNameField = new JTextField("denemeDatabase");
+    private final JTextField dbNameField = new JTextField("postgres");
     private final JTextField schemaField = new JTextField("public");
     private final JTextField outputDirField = new JTextField("./export_output");
 

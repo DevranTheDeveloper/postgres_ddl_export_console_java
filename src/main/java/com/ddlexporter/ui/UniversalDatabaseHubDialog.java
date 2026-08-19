@@ -18,6 +18,9 @@ public class UniversalDatabaseHubDialog extends JDialog {
     private final JLabel dockerStatusLabel = new JLabel();
     private final JButton connectExistingBtn = new JButton("Seçili Konteynere Bağlan");
     private final JButton startStoppedBtn = new JButton("Konteyneri Başlat");
+    private final JTextField existingUserField = new JTextField("postgres", 8);
+    private final JPasswordField existingPassField = new JPasswordField("12345", 8);
+    private final JTextField existingDbField = new JTextField("postgres", 8);
     private final JButton createNewBtn = new JButton("Yeni Demo PostgreSQL Başlat (5432)");
     private final JTextField portField = new JTextField("5432", 6);
     private final JTextField passwordField = new JTextField("postgres", 10);
@@ -110,12 +113,32 @@ public class UniversalDatabaseHubDialog extends JDialog {
                 BorderFactory.createTitledBorder("Mevcut PostgreSQL Konteynerleri"),
                 BorderFactory.createEmptyBorder(10, 12, 10, 12)));
 
+        JPanel existingCenterPanel = new JPanel(new GridLayout(2, 1, 0, 8));
+        existingCenterPanel.setOpaque(false);
+
         JPanel comboRow = new JPanel(new BorderLayout(10, 0));
         JLabel comboLabel = new JLabel("Bulunan Konteyner:");
         comboLabel.setFont(comboLabel.getFont().deriveFont(Font.BOLD, 12f));
         comboRow.add(comboLabel, BorderLayout.WEST);
         comboRow.add(containerComboBox, BorderLayout.CENTER);
-        existingCard.add(comboRow, BorderLayout.NORTH);
+        existingCenterPanel.add(comboRow);
+
+        JPanel authRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        authRow.setOpaque(false);
+        authRow.add(new JLabel("Kullanıcı:"));
+        existingUserField.setPreferredSize(new Dimension(90, 26));
+        authRow.add(existingUserField);
+
+        authRow.add(new JLabel("Şifre:"));
+        existingPassField.setPreferredSize(new Dimension(110, 26));
+        authRow.add(existingPassField);
+
+        authRow.add(new JLabel("Veritabanı:"));
+        existingDbField.setPreferredSize(new Dimension(100, 26));
+        authRow.add(existingDbField);
+
+        existingCenterPanel.add(authRow);
+        existingCard.add(existingCenterPanel, BorderLayout.CENTER);
 
         JPanel existingBtnRow = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 6));
         startStoppedBtn.addActionListener(e -> startSelectedContainer());
@@ -311,12 +334,16 @@ public class UniversalDatabaseHubDialog extends JDialog {
             } catch (Exception ignored) {}
         }
 
+        String user = existingUserField.getText().trim();
+        String pass = new String(existingPassField.getPassword()).trim();
+        String db = existingDbField.getText().trim();
+
         PostgresqlConfigurationSettings s = new PostgresqlConfigurationSettings();
         s.setServerHost("localhost");
         s.setPort(port);
-        s.setUsername("postgres");
-        s.setPassword("");
-        s.setDatabaseName("postgres");
+        s.setUsername(!user.isEmpty() ? user : "postgres");
+        s.setPassword(pass);
+        s.setDatabaseName(!db.isEmpty() ? db : "postgres");
         s.setSchema("public");
 
         if (onConnectCallback != null) onConnectCallback.accept(s);
