@@ -6,15 +6,53 @@ APP_NAME="PostgreSQL DDL Studio.app"
 
 if [ -n "$APP_PATH" ] && [ -d "$APP_PATH" ]; then
     RESOLVED_APP_PATH="$APP_PATH"
-elif [ -d "$APP_NAME" ]; then
-    RESOLVED_APP_PATH="$APP_NAME"
 elif [ -d "/Users/devransever/Desktop/$APP_NAME" ]; then
     RESOLVED_APP_PATH="/Users/devransever/Desktop/$APP_NAME"
-else
+elif [ -d "$APP_NAME" ]; then
     RESOLVED_APP_PATH="$APP_NAME"
+else
+    # Build the .app directory on the fly
+    RESOLVED_APP_PATH="/tmp/$APP_NAME"
+    rm -rf "$RESOLVED_APP_PATH"
+    mkdir -p "$RESOLVED_APP_PATH/Contents/MacOS"
+    mkdir -p "$RESOLVED_APP_PATH/Contents/Resources"
+    cp src/main/resources/AppIcon.icns "$RESOLVED_APP_PATH/Contents/Resources/AppIcon.icns"
+    cp target/postgres_ddl_export_console_java-1.0.0.jar "$RESOLVED_APP_PATH/Contents/MacOS/app.jar"
+    
+    cat << 'EOF' > "$RESOLVED_APP_PATH/Contents/MacOS/launcher"
+#!/bin/bash
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+java -Xdock:name="PostgreSQL DDL Studio" -jar "$DIR/app.jar"
+EOF
+    chmod 755 "$RESOLVED_APP_PATH/Contents/MacOS/launcher"
+    
+    cat << 'EOF' > "$RESOLVED_APP_PATH/Contents/Info.plist"
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>PostgreSQL DDL Studio</string>
+    <key>CFBundleDisplayName</key>
+    <string>PostgreSQL DDL Studio</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.ddlexporter.app</string>
+    <key>CFBundleVersion</key>
+    <string>5.4.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>5.4.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>launcher</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+</dict>
+</plist>
+EOF
 fi
 
-OUTPUT_DMG="${OUTPUT_DMG:-PostgreSQL-DDL-Studio-5.4.0-macOS.dmg}"
+OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.4.0-macOS.dmg}"
 BG_IMG="scripts/macos/dmg_bg.png"
 BG_IMG_2X="scripts/macos/dmg_bg@2x.png"
 
@@ -30,7 +68,7 @@ rm -f "$OUTPUT_DMG" "$TMP_DMG"
 hdiutil detach "$MOUNT_DIR" 2>/dev/null || true
 
 # 2. Calculate required size
-APP_SIZE_MB=$(du -sm "$RESOLVED_APP_PATH" | cut -f1)
+APP_SIZE_MB=$(du -sm "$RESOLVED_APP_PATH" | awk '{print $1}')
 DMG_SIZE_MB=$((APP_SIZE_MB + 50))
 
 # 3. Create temporary read-write DMG

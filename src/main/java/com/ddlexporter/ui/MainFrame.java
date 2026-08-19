@@ -38,6 +38,9 @@ public class MainFrame extends JFrame {
     private final LogPanel logPanel;
 
     private final JButton scheduleStatusBtn = new JButton();
+    private final JButton updateBtn = new JButton("Güncellemeleri Denetle");
+    private final com.ddlexporter.update.UpdateManager updateManager = new com.ddlexporter.update.UpdateManager();
+    private com.ddlexporter.update.UpdateManager.ReleaseInfo latestReleaseInfo = null;
 
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel contentCards = new JPanel(cardLayout);
@@ -58,7 +61,7 @@ public class MainFrame extends JFrame {
     private boolean isLogVisible = true;
 
     public MainFrame() {
-        super("PostgreSQL DDL Export Studio - v2.0.0");
+        super("PostgreSQL DDL Export Studio - v" + com.ddlexporter.update.UpdateManager.CURRENT_VERSION);
 
         // macOS Native Properties
         System.setProperty("apple.laf.useScreenMenuBar", "true");
@@ -225,6 +228,13 @@ public class MainFrame extends JFrame {
             new ScheduledBackupDialog(this, scheduleManager, profileManager, this::updateScheduleButtonUi).setVisible(true);
         });
         rightControls.add(scheduleStatusBtn);
+
+        // Update Button (Live Hot-Updater)
+        updateBtn.setFont(updateBtn.getFont().deriveFont(Font.BOLD, 12f));
+        updateBtn.setToolTipText("Canlı Güncellemeleri Denetle & Yükle");
+        updateBtn.setFocusable(false);
+        updateBtn.addActionListener(e -> checkForUpdates(true));
+        rightControls.add(updateBtn);
 
         // Shortcuts & Help Guide Button
         JButton shortcutsBtn = new JButton("Kısayollar");
@@ -474,6 +484,67 @@ public class MainFrame extends JFrame {
         if (count > 0) {
             logPanel.appendLog("[" + now + "] [INFO] Mevcut çıktı dizini yüklendi (" + count + " adet DDL dosyası aktif).");
         }
+
+        // Check for updates asynchronously in the background on startup
+        checkForUpdates(false);
+    }
+
+    private void checkForUpdates(boolean userInitiated) {
+        if (userInitiated) {
+            updateBtn.setEnabled(false);
+            updateBtn.setText("Denetleniyor...");
+        }
+
+        new SwingWorker<com.ddlexporter.update.UpdateManager.ReleaseInfo, Void>() {
+            private Exception error = null;
+
+            @Override
+            protected com.ddlexporter.update.UpdateManager.ReleaseInfo doInBackground() {
+                try {
+                    return updateManager.checkLatestRelease();
+                } catch (Exception ex) {
+                    error = ex;
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                updateBtn.setEnabled(true);
+                com.ddlexporter.update.UpdateManager.ReleaseInfo info = null;
+                try {
+                    info = get();
+                } catch (Exception ignored) {}
+
+                if (info != null && info.updateAvailable) {
+                    latestReleaseInfo = info;
+                    updateBtn.setText("🚀 " + info.tagName + " Güncelle!");
+                    updateBtn.setForeground(new Color(34, 197, 94));
+                    statusLabel.setText("🚀 Yeni Sürüm (" + info.tagName + ") hazır! Güncellemek için tıklayın.");
+                    logPanel.appendLog("[GÜNCELLEME] Yeni sürüm (" + info.tagName + ") bulundu.");
+                    if (userInitiated) {
+                        new UpdateDialog(MainFrame.this, info, updateManager).setVisible(true);
+                    }
+                } else if (info != null) {
+                    updateBtn.setText("Güncellemeleri Denetle");
+                    updateBtn.setForeground(null);
+                    if (userInitiated) {
+                        JOptionPane.showMessageDialog(MainFrame.this,
+                                "Tebrikler! PostgreSQL DDL Studio'nun en güncel sürümünü (v" + com.ddlexporter.update.UpdateManager.CURRENT_VERSION + ") kullanıyorsunuz.",
+                                "Uygulama Güncel", JOptionPane.INFORMATION_MESSAGE);
+                    }
+                } else {
+                    updateBtn.setText("Güncellemeleri Denetle");
+                    updateBtn.setForeground(null);
+                    if (userInitiated) {
+                        String msg = error != null ? error.getMessage() : "Bilinmeyen ağ hatası.";
+                        JOptionPane.showMessageDialog(MainFrame.this,
+                                "Güncellemeler kontrol edilemedi:\n" + msg,
+                                "Ağ Hatası", JOptionPane.WARNING_MESSAGE);
+                    }
+                }
+            }
+        }.execute();
     }
 
     private void refreshProfileDropdown() {
