@@ -34,9 +34,9 @@ else
     <key>CFBundleIdentifier</key>
     <string>com.ddlexporter.app</string>
     <key>CFBundleVersion</key>
-    <string>5.5.3</string>
+    <string>5.5.4</string>
     <key>CFBundleShortVersionString</key>
-    <string>5.5.3</string>
+    <string>5.5.4</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -54,7 +54,7 @@ EOF
     codesign --force --deep --sign - "$RESOLVED_APP_PATH" 2>/dev/null || true
 fi
 
-OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.3-macOS.dmg}"
+OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.4-macOS.dmg}"
 BG_IMG="scripts/macos/dmg_bg.png"
 BG_IMG_2X="scripts/macos/dmg_bg@2x.png"
 

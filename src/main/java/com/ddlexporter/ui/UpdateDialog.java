@@ -147,7 +147,6 @@ public class UpdateDialog extends JDialog {
             protected Void doInBackground() {
                 try {
                     downloadedTemp = File.createTempFile("PostgreSQL-DDL-Studio-update", ".jar");
-                    downloadedTemp.deleteOnExit();
 
                     updateManager.downloadUpdate(finalUrl, downloadedTemp, (readBytes, totalBytes) -> {
                         int percent = (int) ((readBytes * 100) / totalBytes);

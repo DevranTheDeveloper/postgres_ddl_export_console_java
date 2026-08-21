@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.3";
+    public static final String CURRENT_VERSION = "5.5.4";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -236,8 +236,11 @@ public class UpdateManager {
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("if [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
+            sh.append("fi\n");
             if (appBundle != null) {
                 sh.append("open -n \"").append(appBundle.getAbsolutePath()).append("\"\n");
             } else {
@@ -264,24 +267,30 @@ public class UpdateManager {
             bat.append("set \"SRC=").append(downloadedFile.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"DST=").append(runningJar.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"STD=").append(stdJar.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"APP_DIR=").append(appDir.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"BAT=").append(winBatScript.getAbsolutePath()).append("\"\r\n");
             bat.append("\r\n");
+            bat.append("cd /d \"%APP_DIR%\"\r\n");
+            bat.append("\r\n");
             bat.append("REM Wait for Java process to exit and release file handle\r\n");
-            bat.append("for /L %%i in (1,1,20) do (\r\n");
+            bat.append("for /L %%i in (1,1,30) do (\r\n");
             bat.append("    ping 127.0.0.1 -n 2 >nul\r\n");
-            bat.append("    copy /y \"%SRC%\" \"%DST%\" >nul 2>nul\r\n");
-            bat.append("    if not errorlevel 1 (\r\n");
-            bat.append("        copy /y \"%SRC%\" \"%STD%\" >nul 2>nul\r\n");
-            bat.append("        goto :LAUNCH\r\n");
+            bat.append("    if exist \"%SRC%\" (\r\n");
+            bat.append("        copy /y \"%SRC%\" \"%DST%\" >nul 2>nul\r\n");
+            bat.append("        if not errorlevel 1 (\r\n");
+            bat.append("            copy /y \"%SRC%\" \"%STD%\" >nul 2>nul\r\n");
+            bat.append("            goto :LAUNCH\r\n");
+            bat.append("        )\r\n");
             bat.append("    )\r\n");
             bat.append(")\r\n");
             bat.append("\r\n");
             bat.append(":LAUNCH\r\n");
             bat.append("del /f /q \"%SRC%\" 2>nul\r\n");
+            bat.append("cd /d \"%APP_DIR%\"\r\n");
             bat.append("if exist \"%BAT%\" (\r\n");
-            bat.append("    start \"\" \"%BAT%\"\r\n");
+            bat.append("    start \"\" /d \"%APP_DIR%\" \"%BAT%\"\r\n");
             bat.append(") else (\r\n");
-            bat.append("    start \"\" javaw -jar \"%DST%\"\r\n");
+            bat.append("    start \"\" /d \"%APP_DIR%\" javaw -jar \"%DST%\"\r\n");
             bat.append(")\r\n");
             bat.append("del /f /q \"%~f0\" 2>nul\r\n");
             bat.append("exit\r\n");
@@ -299,14 +308,17 @@ public class UpdateManager {
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("if [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
+            sh.append("fi\n");
             File linuxRunScript = new File(appDir, "run.sh");
             if (linuxRunScript.exists()) {
                 sh.append("chmod +x \"").append(linuxRunScript.getAbsolutePath()).append("\"\n");
-                sh.append("\"").append(linuxRunScript.getAbsolutePath()).append("\" &\n");
+                sh.append("cd \"").append(appDir.getAbsolutePath()).append("\" && \"").append(linuxRunScript.getAbsolutePath()).append("\" &\n");
             } else {
-                sh.append("java -jar \"").append(runningJar.getAbsolutePath()).append("\" &\n");
+                sh.append("cd \"").append(appDir.getAbsolutePath()).append("\" && java -jar \"").append(runningJar.getAbsolutePath()).append("\" &\n");
             }
             sh.append("rm -f \"$0\"\n");
             sh.append("exit 0\n");
