@@ -253,26 +253,37 @@ public class UpdateManager {
             System.exit(0);
 
         } else if (os.contains("win")) {
-            // Windows detached updater batch script
+            // Windows detached updater batch script with retry loop and ping delay
             File updaterBat = File.createTempFile("pg_ddl_win_updater", ".bat");
-            long currentPid = ProcessHandle.current().pid();
+            File stdJar = new File(appDir, "PostgreSQL-DDL-Studio.jar");
+            File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
 
             StringBuilder bat = new StringBuilder();
             bat.append("@echo off\r\n");
-            bat.append(":wait\r\n");
-            bat.append("tasklist /fi \"PID eq ").append(currentPid).append("\" | findstr /i \"").append(currentPid).append("\" >nul\r\n");
-            bat.append("if not errorlevel 1 (\r\n");
-            bat.append("    timeout /t 1 /nobreak >nul\r\n");
-            bat.append("    goto wait\r\n");
+            bat.append("setlocal\r\n");
+            bat.append("set \"SRC=").append(downloadedFile.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"DST=").append(runningJar.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"STD=").append(stdJar.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"BAT=").append(winBatScript.getAbsolutePath()).append("\"\r\n");
+            bat.append("\r\n");
+            bat.append("REM Wait for Java process to exit and release file handle\r\n");
+            bat.append("for /L %%i in (1,1,20) do (\r\n");
+            bat.append("    ping 127.0.0.1 -n 2 >nul\r\n");
+            bat.append("    copy /y \"%SRC%\" \"%DST%\" >nul 2>nul\r\n");
+            bat.append("    if not errorlevel 1 (\r\n");
+            bat.append("        copy /y \"%SRC%\" \"%STD%\" >nul 2>nul\r\n");
+            bat.append("        goto :LAUNCH\r\n");
+            bat.append("    )\r\n");
             bat.append(")\r\n");
-            bat.append("copy /y \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\r\n");
-            File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
-            if (winBatScript.exists()) {
-                bat.append("start \"\" \"").append(winBatScript.getAbsolutePath()).append("\"\r\n");
-            } else {
-                bat.append("start \"\" javaw -jar \"").append(runningJar.getAbsolutePath()).append("\"\r\n");
-            }
-            bat.append("del \"%~f0\"\r\n");
+            bat.append("\r\n");
+            bat.append(":LAUNCH\r\n");
+            bat.append("del /f /q \"%SRC%\" 2>nul\r\n");
+            bat.append("if exist \"%BAT%\" (\r\n");
+            bat.append("    start \"\" \"%BAT%\"\r\n");
+            bat.append(") else (\r\n");
+            bat.append("    start \"\" javaw -jar \"%DST%\"\r\n");
+            bat.append(")\r\n");
+            bat.append("del /f /q \"%~f0\" 2>nul\r\n");
             bat.append("exit\r\n");
 
             java.nio.file.Files.writeString(updaterBat.toPath(), bat.toString());
