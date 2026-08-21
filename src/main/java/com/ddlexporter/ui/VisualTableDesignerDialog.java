@@ -88,6 +88,8 @@ public class VisualTableDesignerDialog extends JDialog {
         updateLiveSql();
     }
 
+    private boolean isAdjusting = false;
+
     private void setupColumnsTable() {
         columnsTable.setRowHeight(28);
         columnsTable.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
@@ -116,8 +118,9 @@ public class VisualTableDesignerDialog extends JDialog {
         centerRenderer.setHorizontalAlignment(JLabel.CENTER);
         columnsTable.getColumnModel().getColumn(0).setCellRenderer(centerRenderer);
 
-        // Auto update SQL on table edits
+        // Auto update SQL on table edits with recursion guard
         tableModel.addTableModelListener(e -> {
+            if (isAdjusting) return;
             renumberRows();
             updateLiveSql();
         });
@@ -382,8 +385,17 @@ public class VisualTableDesignerDialog extends JDialog {
     }
 
     private void renumberRows() {
-        for (int i = 0; i < tableModel.getRowCount(); i++) {
-            tableModel.setValueAt(i + 1, i, 0);
+        if (isAdjusting) return;
+        isAdjusting = true;
+        try {
+            for (int i = 0; i < tableModel.getRowCount(); i++) {
+                Object val = tableModel.getValueAt(i, 0);
+                if (val == null || !Integer.valueOf(i + 1).equals(val)) {
+                    tableModel.setValueAt(i + 1, i, 0);
+                }
+            }
+        } finally {
+            isAdjusting = false;
         }
     }
 

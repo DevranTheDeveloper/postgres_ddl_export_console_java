@@ -771,27 +771,32 @@ public class MainFrame extends JFrame {
     }
 
     private void openVisualTableDesigner() {
-        String outDir = connectionPanel.getOutputDir();
-        File exportDirFile = (outDir != null && !outDir.isBlank()) ? new File(outDir) : new File("export_output");
+        try {
+            String outDir = connectionPanel.getOutputDir();
+            File exportDirFile = (outDir != null && !outDir.isBlank()) ? new File(outDir) : new File("export_output");
 
-        VisualTableDesignerDialog dialog = new VisualTableDesignerDialog(
-                this,
-                connectionPanel::getSettingsFromUi,
-                exportDirFile,
-                () -> SwingUtilities.invokeLater(() -> {
-                    // On table created / saved:
-                    schemaExplorerPanel.loadExportDirectory(exportDirFile.getAbsolutePath());
-                    erDiagramPanel.setExportDir(exportDirFile.getAbsolutePath());
-                    PostgresqlConfigurationSettings settings = connectionPanel.getSettingsFromUi();
-                    erDiagramPanel.loadFromDatabase(settings);
-                    diffViewerPanel.setExportDir(exportDirFile.getAbsolutePath());
-                    gitSyncPanel.refreshGitStatus();
-                    serverStatusPanel.loadAuditHistory();
-                    java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
-                    logPanel.appendLog("[" + java.time.LocalDateTime.now().format(dtf) + "] [INFO] Yeni tablo başarıyla oluşturuldu ve şemaya senkronize edildi.");
-                })
-        );
-        dialog.setVisible(true);
+            VisualTableDesignerDialog dialog = new VisualTableDesignerDialog(
+                    this,
+                    connectionPanel::getSettingsFromUi,
+                    exportDirFile,
+                    () -> SwingUtilities.invokeLater(() -> {
+                        // On table created / saved:
+                        schemaExplorerPanel.loadExportDirectory(exportDirFile.getAbsolutePath());
+                        erDiagramPanel.setExportDir(exportDirFile.getAbsolutePath());
+                        PostgresqlConfigurationSettings settings = connectionPanel.getSettingsFromUi();
+                        erDiagramPanel.loadFromDatabase(settings);
+                        diffViewerPanel.setExportDir(exportDirFile.getAbsolutePath());
+                        gitSyncPanel.refreshGitStatus();
+                        serverStatusPanel.loadAuditHistory();
+                        java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                        logPanel.appendLog("[" + java.time.LocalDateTime.now().format(dtf) + "] [INFO] Yeni tablo başarıyla oluşturuldu ve şemaya senkronize edildi.");
+                    })
+            );
+            dialog.setVisible(true);
+        } catch (Throwable t) {
+            t.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Tablo Tasarımcısı açılırken hata oluştu:\n" + t.getMessage(), "Hata", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private void initAppIcon() {
