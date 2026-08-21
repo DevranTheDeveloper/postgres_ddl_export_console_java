@@ -40,28 +40,22 @@ public class ErDiagramPanel extends JPanel {
         ));
 
         JPanel leftControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JLabel title = new JLabel("Görsel Şema & İlişki Haritası (ERD)");
+        JLabel title = new JLabel("🗺️ İlişki Haritası (ERD)");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 13f));
+        title.setToolTipText("Tablo kartlarına çift tıklayarak SQL kodunu doğrudan açabilirsiniz");
         leftControls.add(title);
 
-        searchField.setPreferredSize(new Dimension(180, 26));
-        searchField.putClientProperty("JTextField.placeholderText", "Tablo ara / vurgula...");
+        searchField.setPreferredSize(new Dimension(135, 26));
+        searchField.putClientProperty("JTextField.placeholderText", "Tablo ara...");
         searchField.getDocument().addDocumentListener(new DocumentListener() {
             public void insertUpdate(DocumentEvent e) { updateHighlight(); }
             public void removeUpdate(DocumentEvent e) { updateHighlight(); }
             public void changedUpdate(DocumentEvent e) { updateHighlight(); }
         });
-        leftControls.add(new JLabel("Tablo Ara:"));
         leftControls.add(searchField);
-
-        JLabel tipLabel = new JLabel("(Tabloya çift tıklayarak SQL koduna gidebilirsiniz)");
-        tipLabel.setFont(tipLabel.getFont().deriveFont(Font.ITALIC, 11f));
-        tipLabel.setForeground(new Color(110, 120, 135));
-        leftControls.add(tipLabel);
-
         topBar.add(leftControls, BorderLayout.WEST);
 
-        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 6, 0));
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 5, 0));
 
         JButton zoomInBtn = new JButton("+");
         zoomInBtn.setToolTipText("Yakınlaştır");
@@ -73,13 +67,13 @@ public class ErDiagramPanel extends JPanel {
         zoomOutBtn.addActionListener(e -> canvas.zoom(0.85));
         rightControls.add(zoomOutBtn);
 
-        JButton resetViewBtn = new JButton("Sıfırla");
+        JButton resetViewBtn = new JButton("↺ Sıfırla");
         resetViewBtn.setFont(resetViewBtn.getFont().deriveFont(Font.PLAIN, 11f));
         resetViewBtn.setToolTipText("Görünümü ve yakınlaştırmayı sıfırla");
         resetViewBtn.addActionListener(e -> canvas.resetView());
         rightControls.add(resetViewBtn);
 
-        JButton autoArrangeBtn = new JButton("Düzenle");
+        JButton autoArrangeBtn = new JButton("📐 Düzenle");
         autoArrangeBtn.setFont(autoArrangeBtn.getFont().deriveFont(Font.PLAIN, 11f));
         autoArrangeBtn.setToolTipText("Tabloları ızgaraya göre otomatik hizala");
         autoArrangeBtn.addActionListener(e -> {
@@ -88,14 +82,16 @@ public class ErDiagramPanel extends JPanel {
         });
         rightControls.add(autoArrangeBtn);
 
-        JButton copyMermaidBtn = new JButton("Mermaid Kopyala");
+        JButton copyMermaidBtn = new JButton("📋 Mermaid");
         copyMermaidBtn.setFont(copyMermaidBtn.getFont().deriveFont(Font.PLAIN, 11f));
+        copyMermaidBtn.setToolTipText("Mermaid ER Diyagram kodunu panoya kopyala");
         copyMermaidBtn.addActionListener(e -> copyMermaidCode());
         rightControls.add(copyMermaidBtn);
 
-        JButton exportImgBtn = new JButton("PNG Olarak Kaydet");
+        JButton exportImgBtn = new JButton("🖼️ PNG");
         exportImgBtn.setFont(exportImgBtn.getFont().deriveFont(Font.BOLD, 11f));
         exportImgBtn.setForeground(new Color(22, 163, 74));
+        exportImgBtn.setToolTipText("ER Diyagramını PNG görseli olarak kaydet");
         exportImgBtn.addActionListener(e -> exportAsImage());
         rightControls.add(exportImgBtn);
 

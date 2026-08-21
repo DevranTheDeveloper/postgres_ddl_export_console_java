@@ -195,35 +195,42 @@ public class MainFrame extends JFrame {
     private void setupTopHeader() {
         topHeader.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(0, 0, 1, 0, new Color(215, 220, 230)),
-                BorderFactory.createEmptyBorder(10, 18, 10, 18)));
+                BorderFactory.createEmptyBorder(8, 14, 8, 14)));
 
-        // Left Branding
-        JPanel brandPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        brandPanel.setOpaque(false);
-        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 16f));
-        brandPanel.add(titleLabel);
-        topHeader.add(brandPanel, BorderLayout.WEST);
+        // Left Branding & Profile Selector Area
+        JPanel leftBrandProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        leftBrandProfilePanel.setOpaque(false);
 
-        // Right Controls: Profile & Theme Switcher
-        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        rightControls.setOpaque(false);
+        titleLabel.setText("🐘 PostgreSQL DDL Studio");
+        titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
+        leftBrandProfilePanel.add(titleLabel);
+
+        JSeparator sep = new JSeparator(SwingConstants.VERTICAL);
+        sep.setPreferredSize(new Dimension(2, 20));
+        leftBrandProfilePanel.add(sep);
 
         profileLabel.setFont(profileLabel.getFont().deriveFont(Font.BOLD, 12f));
-        rightControls.add(profileLabel);
+        leftBrandProfilePanel.add(profileLabel);
 
-        profileComboBox.setPreferredSize(new Dimension(210, 30));
+        profileComboBox.setPreferredSize(new Dimension(175, 28));
         profileComboBox.setFont(profileComboBox.getFont().deriveFont(Font.PLAIN, 12f));
         profileComboBox.addActionListener(e -> onProfileSelected());
-        rightControls.add(profileComboBox);
+        leftBrandProfilePanel.add(profileComboBox);
 
         JButton profileMenuBtn = new JButton("Yönet ▾");
-        profileMenuBtn.setFont(profileMenuBtn.getFont().deriveFont(Font.BOLD, 12f));
+        profileMenuBtn.setFont(profileMenuBtn.getFont().deriveFont(Font.BOLD, 11f));
         profileMenuBtn.setToolTipText("Profil yönetim seçenekleri (Yeni Ekle, Çoğalt, Sil)");
         profileMenuBtn.addActionListener(e -> showProfileMenu(profileMenuBtn));
-        rightControls.add(profileMenuBtn);
+        leftBrandProfilePanel.add(profileMenuBtn);
+
+        topHeader.add(leftBrandProfilePanel, BorderLayout.WEST);
+
+        // Right Utility Actions (Clean, concise & icon-enhanced)
+        JPanel rightControls = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
+        rightControls.setOpaque(false);
 
         // Scheduled Backup Status & Dialog Button
-        scheduleStatusBtn.setFont(scheduleStatusBtn.getFont().deriveFont(Font.BOLD, 12f));
+        scheduleStatusBtn.setFont(scheduleStatusBtn.getFont().deriveFont(Font.BOLD, 11f));
         scheduleStatusBtn.setToolTipText("Otomatik Zamanlanmış DDL Yedekleme Yapılandırması");
         scheduleStatusBtn.setFocusable(false);
         scheduleStatusBtn.addActionListener(e -> {
@@ -232,22 +239,22 @@ public class MainFrame extends JFrame {
         rightControls.add(scheduleStatusBtn);
 
         // Update Button (Live Hot-Updater)
-        updateBtn.setFont(updateBtn.getFont().deriveFont(Font.BOLD, 12f));
+        updateBtn.setFont(updateBtn.getFont().deriveFont(Font.BOLD, 11f));
         updateBtn.setToolTipText("Canlı Güncellemeleri Denetle & Yükle");
         updateBtn.setFocusable(false);
         updateBtn.addActionListener(e -> checkForUpdates(true));
         rightControls.add(updateBtn);
 
         // Shortcuts & Help Guide Button
-        JButton shortcutsBtn = new JButton("Kısayollar");
-        shortcutsBtn.setFont(shortcutsBtn.getFont().deriveFont(Font.PLAIN, 12f));
+        JButton shortcutsBtn = new JButton("⌨️ Kısayollar");
+        shortcutsBtn.setFont(shortcutsBtn.getFont().deriveFont(Font.PLAIN, 11f));
         shortcutsBtn.setToolTipText("Klavye kısayolları ve kullanım ipuçları");
         shortcutsBtn.setFocusable(false);
         shortcutsBtn.addActionListener(e -> new HelpShortcutsDialog(this).setVisible(true));
         rightControls.add(shortcutsBtn);
 
         // Theme Toggle Button
-        themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 12f));
+        themeToggleBtn.setFont(themeToggleBtn.getFont().deriveFont(Font.BOLD, 11f));
         themeToggleBtn.setFocusable(false);
         themeToggleBtn.addActionListener(e -> toggleTheme());
         rightControls.add(themeToggleBtn);
@@ -256,16 +263,16 @@ public class MainFrame extends JFrame {
     }
 
     private void setupFullWidthTabBar() {
-        navTabBar.setPreferredSize(new Dimension(0, 40));
+        navTabBar.setPreferredSize(new Dimension(0, 38));
         navTabBar.removeAll();
         tabButtons.clear();
 
-        tabButtons.add(createTabButton("Şema & SQL Gezgini", CARD_SCHEMA));
-        tabButtons.add(createTabButton("İlişki Haritası (ERD)", CARD_ERD));
-        tabButtons.add(createTabButton("Bağlantı Ayarları", CARD_SETTINGS));
-        tabButtons.add(createTabButton("Sunucu Durumu", CARD_METRICS));
-        tabButtons.add(createTabButton("Şema Farkı (Diff)", CARD_DIFF));
-        tabButtons.add(createTabButton("Git & GitHub", CARD_GIT));
+        tabButtons.add(createTabButton("📁 Şema & SQL Gezgini", CARD_SCHEMA));
+        tabButtons.add(createTabButton("🗺️ İlişki Haritası (ERD)", CARD_ERD));
+        tabButtons.add(createTabButton("⚡ Bağlantı Ayarları", CARD_SETTINGS));
+        tabButtons.add(createTabButton("📊 Sunucu Durumu", CARD_METRICS));
+        tabButtons.add(createTabButton("🔄 Şema Farkı (Diff)", CARD_DIFF));
+        tabButtons.add(createTabButton("🐙 Git & GitHub", CARD_GIT));
 
         for (JButton btn : tabButtons) {
             navTabBar.add(btn);
