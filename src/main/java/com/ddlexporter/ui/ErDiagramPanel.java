@@ -24,6 +24,11 @@ public class ErDiagramPanel extends JPanel {
 
     private Consumer<String> tableNavigateListener = null;
     private Consumer<String> diffNavigateListener = null;
+    private Runnable onNewTableRequested = null;
+
+    public void setOnNewTableRequested(Runnable onNewTableRequested) {
+        this.onNewTableRequested = onNewTableRequested;
+    }
 
     public ErDiagramPanel() {
         setLayout(new BorderLayout(5, 5));
@@ -81,6 +86,15 @@ public class ErDiagramPanel extends JPanel {
             canvas.repaint();
         });
         rightControls.add(autoArrangeBtn);
+
+        JButton newTableBtn = new JButton("+ Yeni Tablo");
+        newTableBtn.setFont(newTableBtn.getFont().deriveFont(Font.BOLD, 11f));
+        newTableBtn.setForeground(new Color(22, 163, 74));
+        newTableBtn.setToolTipText("Görsel Tablo Tasarımcısını açıp sıfırdan tablo oluştur ve ERD haritasına ekle");
+        newTableBtn.addActionListener(e -> {
+            if (onNewTableRequested != null) onNewTableRequested.run();
+        });
+        rightControls.add(newTableBtn);
 
         JButton copyMermaidBtn = new JButton("Mermaid");
         copyMermaidBtn.setFont(copyMermaidBtn.getFont().deriveFont(Font.PLAIN, 11f));

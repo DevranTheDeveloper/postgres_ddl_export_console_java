@@ -4,7 +4,7 @@
 # ========================================================================
 set -e
 
-VERSION="5.5.7"
+VERSION="5.5.8"
 DEB_DIR="build_deb/postgresql-ddl-studio_${VERSION}_all"
 OUTPUT_DEB="PostgreSQL-DDL-Studio-${VERSION}-Linux.deb"
 

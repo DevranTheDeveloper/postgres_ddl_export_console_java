@@ -105,6 +105,10 @@ public class MainFrame extends JFrame {
         }));
         scheduleManager.restartScheduler();
 
+        // Connect Visual Table Designer to Schema Explorer & ERD panels
+        schemaExplorerPanel.setOnNewTableRequested(this::openVisualTableDesigner);
+        erDiagramPanel.setOnNewTableRequested(this::openVisualTableDesigner);
+
         // Connect ERD visual navigation to SQL editor and Diff viewer
         erDiagramPanel.setTableNavigateListener(tableName -> {
             selectTab(CARD_SCHEMA);
@@ -764,6 +768,30 @@ public class MainFrame extends JFrame {
                 }
             }
         }.execute();
+    }
+
+    private void openVisualTableDesigner() {
+        String outDir = connectionPanel.getOutputDir();
+        File exportDirFile = (outDir != null && !outDir.isBlank()) ? new File(outDir) : new File("export_output");
+
+        VisualTableDesignerDialog dialog = new VisualTableDesignerDialog(
+                this,
+                connectionPanel::getSettingsFromUi,
+                exportDirFile,
+                () -> SwingUtilities.invokeLater(() -> {
+                    // On table created / saved:
+                    schemaExplorerPanel.loadExportDirectory(exportDirFile.getAbsolutePath());
+                    erDiagramPanel.setExportDir(exportDirFile.getAbsolutePath());
+                    PostgresqlConfigurationSettings settings = connectionPanel.getSettingsFromUi();
+                    erDiagramPanel.loadFromDatabase(settings);
+                    diffViewerPanel.setExportDir(exportDirFile.getAbsolutePath());
+                    gitSyncPanel.refreshGitStatus();
+                    serverStatusPanel.loadAuditHistory();
+                    java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+                    logPanel.appendLog("[" + java.time.LocalDateTime.now().format(dtf) + "] [INFO] Yeni tablo başarıyla oluşturuldu ve şemaya senkronize edildi.");
+                })
+        );
+        dialog.setVisible(true);
     }
 
     private void initAppIcon() {

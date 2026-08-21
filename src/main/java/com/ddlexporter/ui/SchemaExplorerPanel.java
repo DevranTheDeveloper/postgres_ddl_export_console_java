@@ -39,6 +39,11 @@ public class SchemaExplorerPanel extends JPanel {
     private final JButton saveBtn = new JButton("Kaydet");
     private final JButton discardBtn = new JButton("Geri Al");
     private Runnable onFileSavedListener = null;
+    private Runnable onNewTableRequested = null;
+
+    public void setOnNewTableRequested(Runnable onNewTableRequested) {
+        this.onNewTableRequested = onNewTableRequested;
+    }
 
     public SchemaExplorerPanel() {
         setLayout(new BorderLayout(5, 5));
@@ -93,6 +98,15 @@ public class SchemaExplorerPanel extends JPanel {
         copyBtn.addActionListener(e -> copySqlToClipboard());
         actionsPanel.add(copyBtn);
 
+        JButton newTableBtn = new JButton("+ Yeni Tablo");
+        newTableBtn.setFont(newTableBtn.getFont().deriveFont(Font.BOLD, 12f));
+        newTableBtn.setForeground(new Color(22, 163, 74));
+        newTableBtn.setToolTipText("Görsel Tablo Tasarımcısını açıp sıfırdan tablo oluştur ve veritabanına ekle");
+        newTableBtn.addActionListener(e -> {
+            if (onNewTableRequested != null) onNewTableRequested.run();
+        });
+        actionsPanel.add(newTableBtn);
+
         JButton zipBtn = new JButton("ZIP Arşivle");
         zipBtn.setFont(zipBtn.getFont().deriveFont(Font.BOLD, 12f));
         zipBtn.setForeground(new Color(9, 105, 218));
@@ -115,6 +129,24 @@ public class SchemaExplorerPanel extends JPanel {
         renderer.setClosedIcon(UIManager.getIcon("Tree.closedIcon"));
         renderer.setOpenIcon(UIManager.getIcon("Tree.openIcon"));
         tree.setCellRenderer(renderer);
+
+        // Right-Click Context Menu for Tree
+        JPopupMenu treeContextMenu = new JPopupMenu();
+        JMenuItem ctxNewTable = new JMenuItem("+ Yeni Tablo Tasarla...");
+        ctxNewTable.setFont(ctxNewTable.getFont().deriveFont(Font.BOLD, 12f));
+        ctxNewTable.addActionListener(e -> {
+            if (onNewTableRequested != null) onNewTableRequested.run();
+        });
+        treeContextMenu.add(ctxNewTable);
+        treeContextMenu.addSeparator();
+
+        JMenuItem ctxRefresh = new JMenuItem("Şemayı Yeniden Yükle");
+        ctxRefresh.addActionListener(e -> {
+            if (currentExportDir != null) loadExportDirectory(currentExportDir.getAbsolutePath());
+        });
+        treeContextMenu.add(ctxRefresh);
+
+        tree.setComponentPopupMenu(treeContextMenu);
 
         tree.addTreeSelectionListener(e -> {
             DefaultMutableTreeNode selected = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
