@@ -38,6 +38,17 @@ DisableProgramGroupPage=auto
 PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
+; Windows PE Version & Security Metadata
+VersionInfoVersion=5.5.0.0
+VersionInfoTextVersion=5.5.0
+VersionInfoCompany={#MyAppPublisher}
+VersionInfoDescription={#MyAppName} Setup Installer
+VersionInfoCopyright=Copyright (C) 2026 {#MyAppPublisher}. All rights reserved.
+VersionInfoProductName={#MyAppName}
+VersionInfoProductVersion=5.5.0.0
+VersionInfoOriginalFileName=PostgreSQL-DDL-Studio-Setup-{#MyAppVersion}.exe
+MinVersion=6.1sp1
+
 [Languages]
 Name: "turkish"; MessagesFile: "compiler:Languages\Turkish.isl"
 Name: "english"; MessagesFile: "compiler:Default.isl"

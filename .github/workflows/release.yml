@@ -210,8 +210,11 @@ jobs:
           name: windows-exe-artifact
           path: release_assets/
 
-      - name: List Release Files
-        run: ls -lh release_assets/
+      - name: Generate Cryptographic SHA-256 Checksums
+        run: |
+          cd release_assets/
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -240,6 +243,7 @@ jobs:
             - 🐧 **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.5.0-Linux.tar.gz`
             - 🪟 **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.5.0-Windows.zip`
             - ☕ **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
+            - 🔒 **Güvenlik Doğrulama:** `SHA256SUMS.txt`
           files: |
             release_assets/PostgreSQL-DDL-Studio-Setup-5.5.0.exe
             release_assets/PostgreSQL-DDL-Studio-5.5.0-macOS.dmg
@@ -247,5 +251,6 @@ jobs:
             release_assets/PostgreSQL-DDL-Studio-5.5.0-Linux.tar.gz
             release_assets/PostgreSQL-DDL-Studio-5.5.0-Windows.zip
             release_assets/postgres_ddl_export_console_java-1.0.0.jar
+            release_assets/SHA256SUMS.txt
           draft: false
           prerelease: false

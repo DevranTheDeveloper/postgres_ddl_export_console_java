@@ -43,9 +43,15 @@ else
     <string>launcher</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
+    <key>NSHumanReadableCopyright</key>
+    <string>Copyright © 2026 Devran Sever. All rights reserved.</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>10.15</string>
 </dict>
 </plist>
 EOF
+    xattr -cr "$RESOLVED_APP_PATH" 2>/dev/null || true
+    codesign --force --deep --sign - "$RESOLVED_APP_PATH" 2>/dev/null || true
 fi
 
 OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.0-macOS.dmg}"
