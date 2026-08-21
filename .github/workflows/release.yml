@@ -74,7 +74,7 @@ jobs:
       - name: Build Professional Drag-and-Drop DMG Installer
         run: |
           brew install create-dmg dpkg || true
-          OUTPUT_DMG="PostgreSQL-DDL-Studio-5.5.5-macOS.dmg"
+          OUTPUT_DMG="PostgreSQL-DDL-Studio-5.5.6-macOS.dmg"
           rm -f "$OUTPUT_DMG"
           
           create-dmg \
@@ -106,7 +106,7 @@ jobs:
           cp scripts/windows/PostgreSQL-DDL-Studio.vbs "$WIN_DIR/"
           cp scripts/windows/README-Windows.txt "$WIN_DIR/"
           cp src/main/resources/AppIcon.ico "$WIN_DIR/"
-          zip -r "PostgreSQL-DDL-Studio-5.5.5-Windows.zip" "$WIN_DIR"
+          zip -r "PostgreSQL-DDL-Studio-5.5.6-Windows.zip" "$WIN_DIR"
           rm -rf "$WIN_DIR"
 
       - name: Create Linux Portable Tarball & Debian Package
@@ -141,13 +141,18 @@ jobs:
           ========================================================================
           EOF
           chmod +x "$LINUX_DIR/run.sh" "$LINUX_DIR/install.sh"
-          tar -czf "PostgreSQL-DDL-Studio-5.5.5-Linux.tar.gz" "$LINUX_DIR"
+          tar -czf "PostgreSQL-DDL-Studio-5.5.6-Linux.tar.gz" "$LINUX_DIR"
           rm -rf "$LINUX_DIR"
 
           # Build .deb Package if dpkg-deb is available
           /bin/bash scripts/linux/build_deb.sh || true
 
       - name: Save Unix Artifacts
+        run: |
+          cp target/postgres_ddl_export_console_java-1.0.0.jar PostgreSQL-DDL-Studio.jar
+        shell: bash
+
+      - name: Upload Unix Artifacts
         uses: actions/upload-artifact@v4
         with:
           name: unix-artifacts
@@ -156,6 +161,7 @@ jobs:
             *.zip
             *.tar.gz
             *.deb
+            PostgreSQL-DDL-Studio.jar
             target/postgres_ddl_export_console_java-1.0.0.jar
 
   build-windows-exe:
@@ -234,12 +240,12 @@ jobs:
             
             ---
             ### İndirme Paketleri (Binary Assets):
-            - **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.5.5.exe` *(Önerilen)*
-            - **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.5.5-macOS.dmg`
-            - **Linux (.deb Kurulum Paketi - Kali/Debian/Ubuntu):** `PostgreSQL-DDL-Studio-5.5.5-Linux.deb`
-            - **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.5.5-Linux.tar.gz`
-            - **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.5.5-Windows.zip`
-            - **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
+            - **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.5.6.exe` *(Önerilen)*
+            - **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.5.6-macOS.dmg`
+            - **Linux (.deb Kurulum Paketi - Kali/Debian/Ubuntu):** `PostgreSQL-DDL-Studio-5.5.6-Linux.deb`
+            - **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.5.6-Linux.tar.gz`
+            - **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.5.6-Windows.zip`
+            - **Evrensel JAR (Tüm Sistemler & CLI):** `PostgreSQL-DDL-Studio.jar`
             - **Güvenlik Doğrulama:** `SHA256SUMS.txt`
           files: release_assets/*
           fail_on_unmatched_files: false

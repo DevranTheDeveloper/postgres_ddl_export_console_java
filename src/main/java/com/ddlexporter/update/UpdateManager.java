@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.5";
+    public static final String CURRENT_VERSION = "5.5.6";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -244,17 +244,21 @@ public class UpdateManager {
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("if [ -f \"").append(pendingJar.getAbsolutePath()).append("\" ]; then\n");
-            sh.append("    cp -f \"").append(pendingJar.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\"\n");
-            sh.append("elif [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
-            sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("SRC=\"").append(pendingJar.getAbsolutePath()).append("\"\n");
+            sh.append("[ ! -f \"$SRC\" ] && SRC=\"").append(downloadedFile.getAbsolutePath()).append("\"\n");
+            sh.append("if [ -f \"$SRC\" ]; then\n");
+            sh.append("    cp -f \"$SRC\" \"").append(appDir.getAbsolutePath()).append("/app.jar\" 2>/dev/null || true\n");
+            sh.append("    cp -f \"$SRC\" \"").append(appDir.getAbsolutePath()).append("/PostgreSQL-DDL-Studio.jar\" 2>/dev/null || true\n");
+            sh.append("    cp -f \"$SRC\" \"").append(appDir.getAbsolutePath()).append("/postgres_ddl_export_console_java-1.0.0.jar\" 2>/dev/null || true\n");
+            sh.append("    cp -f \"$SRC\" \"").append(runningJar.getAbsolutePath()).append("\" 2>/dev/null || true\n");
+            sh.append("    chmod 755 \"").append(appDir.getAbsolutePath()).append("\"/*.jar 2>/dev/null || true\n");
+            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\" 2>/dev/null || true\n");
+            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\" 2>/dev/null || true\n");
             sh.append("fi\n");
-            sh.append("rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             if (appBundle != null) {
                 sh.append("open -n \"").append(appBundle.getAbsolutePath()).append("\"\n");
+            } else if (new File(appDir, "launcher").exists()) {
+                sh.append("\"").append(new File(appDir, "launcher").getAbsolutePath()).append("\" &\n");
             } else {
                 sh.append("java -jar \"").append(runningJar.getAbsolutePath()).append("\" &\n");
             }
@@ -268,9 +272,8 @@ public class UpdateManager {
             System.exit(0);
 
         } else if (os.contains("win")) {
-            // Windows detached updater batch script with retry loop and dual source
+            // Windows detached updater batch script with retry loop and multi-target overwrite
             File updaterBat = File.createTempFile("pg_ddl_win_patcher", ".bat");
-            File stdJar = new File(appDir, "PostgreSQL-DDL-Studio.jar");
             File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
 
             StringBuilder bat = new StringBuilder();
@@ -278,27 +281,30 @@ public class UpdateManager {
             bat.append("setlocal\r\n");
             bat.append("set \"PENDING=").append(pendingJar.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"SRC=").append(downloadedFile.getAbsolutePath()).append("\"\r\n");
-            bat.append("set \"DST=").append(runningJar.getAbsolutePath()).append("\"\r\n");
-            bat.append("set \"STD=").append(stdJar.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"APP_DIR=").append(appDir.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"BAT=").append(winBatScript.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"RUNNING=").append(runningJar.getAbsolutePath()).append("\"\r\n");
             bat.append("\r\n");
             bat.append("cd /d \"%APP_DIR%\"\r\n");
             bat.append("\r\n");
-            bat.append("REM Wait for Java process to exit and release file handle\r\n");
+            bat.append("REM Retry loop waiting for process to exit and unlock files\r\n");
             bat.append("for /L %%i in (1,1,30) do (\r\n");
             bat.append("    ping 127.0.0.1 -n 2 >nul\r\n");
             bat.append("    if exist \"%PENDING%\" (\r\n");
-            bat.append("        copy /y \"%PENDING%\" \"%DST%\" >nul 2>nul\r\n");
+            bat.append("        copy /y \"%PENDING%\" \"PostgreSQL-DDL-Studio.jar\" >nul 2>nul\r\n");
             bat.append("        if not errorlevel 1 (\r\n");
-            bat.append("            copy /y \"%PENDING%\" \"%STD%\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%PENDING%\" \"postgres_ddl_export_console_java-1.0.0.jar\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%PENDING%\" \"app.jar\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%PENDING%\" \"%RUNNING%\" >nul 2>nul\r\n");
             bat.append("            del /f /q \"%PENDING%\" >nul 2>nul\r\n");
             bat.append("            goto :LAUNCH\r\n");
             bat.append("        )\r\n");
             bat.append("    ) else if exist \"%SRC%\" (\r\n");
-            bat.append("        copy /y \"%SRC%\" \"%DST%\" >nul 2>nul\r\n");
+            bat.append("        copy /y \"%SRC%\" \"PostgreSQL-DDL-Studio.jar\" >nul 2>nul\r\n");
             bat.append("        if not errorlevel 1 (\r\n");
-            bat.append("            copy /y \"%SRC%\" \"%STD%\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%SRC%\" \"postgres_ddl_export_console_java-1.0.0.jar\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%SRC%\" \"app.jar\" >nul 2>nul\r\n");
+            bat.append("            copy /y \"%SRC%\" \"%RUNNING%\" >nul 2>nul\r\n");
             bat.append("            goto :LAUNCH\r\n");
             bat.append("        )\r\n");
             bat.append("    )\r\n");
@@ -311,10 +317,9 @@ public class UpdateManager {
             bat.append("if exist \"%BAT%\" (\r\n");
             bat.append("    start \"\" /d \"%APP_DIR%\" \"%BAT%\"\r\n");
             bat.append(") else (\r\n");
-            bat.append("    start \"\" /d \"%APP_DIR%\" javaw -jar \"%DST%\"\r\n");
+            bat.append("    start \"\" /d \"%APP_DIR%\" javaw -jar \"PostgreSQL-DDL-Studio.jar\"\r\n");
             bat.append(")\r\n");
-            bat.append("del /f /q \"%~f0\" 2>nul\r\n");
-            bat.append("exit\r\n");
+            bat.append("(goto) 2>nul & del /f /q \"%~f0\" 2>nul & exit\r\n");
 
             java.nio.file.Files.writeString(updaterBat.toPath(), bat.toString());
 
@@ -329,15 +334,16 @@ public class UpdateManager {
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("if [ -f \"").append(pendingJar.getAbsolutePath()).append("\" ]; then\n");
-            sh.append("    cp -f \"").append(pendingJar.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\"\n");
-            sh.append("elif [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
-            sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("SRC=\"").append(pendingJar.getAbsolutePath()).append("\"\n");
+            sh.append("[ ! -f \"$SRC\" ] && SRC=\"").append(downloadedFile.getAbsolutePath()).append("\"\n");
+            sh.append("if [ -f \"$SRC\" ]; then\n");
+            sh.append("    cp -f \"$SRC\" \"").append(appDir.getAbsolutePath()).append("/PostgreSQL-DDL-Studio.jar\" 2>/dev/null || true\n");
+            sh.append("    cp -f \"$SRC\" \"").append(appDir.getAbsolutePath()).append("/postgres_ddl_export_console_java-1.0.0.jar\" 2>/dev/null || true\n");
+            sh.append("    cp -f \"$SRC\" \"").append(runningJar.getAbsolutePath()).append("\" 2>/dev/null || true\n");
+            sh.append("    chmod 755 \"").append(appDir.getAbsolutePath()).append("\"/*.jar 2>/dev/null || true\n");
+            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\" 2>/dev/null || true\n");
+            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\" 2>/dev/null || true\n");
             sh.append("fi\n");
-            sh.append("rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             File linuxRunScript = new File(appDir, "run.sh");
             if (linuxRunScript.exists()) {
                 sh.append("chmod +x \"").append(linuxRunScript.getAbsolutePath()).append("\"\n");
