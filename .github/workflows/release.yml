@@ -109,12 +109,13 @@ jobs:
           zip -r "PostgreSQL-DDL-Studio-5.4.0-Windows.zip" "$WIN_DIR"
           rm -rf "$WIN_DIR"
 
-      - name: Create Linux Portable Tarball
+      - name: Create Linux Portable Tarball & Debian Package
         run: |
           LINUX_DIR="PostgreSQL-DDL-Studio-Linux"
           mkdir -p "$LINUX_DIR"
           cp target/postgres_ddl_export_console_java-1.0.0.jar "$LINUX_DIR/PostgreSQL-DDL-Studio.jar"
           cp scripts/linux/run.sh "$LINUX_DIR/run.sh"
+          cp scripts/linux/install.sh "$LINUX_DIR/install.sh"
           cp scripts/linux/postgres-ddl-studio.desktop "$LINUX_DIR/"
           cp src/main/resources/app_icon.png "$LINUX_DIR/"
           
@@ -124,24 +125,27 @@ jobs:
           ========================================================================
 
           Gereksinimler:
-          - Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux vb.
-          - Java 17+ (OpenJDK / Temurin: sudo apt install openjdk-17-jre)
+          - Kali Linux, Ubuntu 20.04+, Debian 11+, Fedora 36+, Arch Linux vb.
+          - Java 17+ (Kali / Debian / Ubuntu: sudo apt install -y openjdk-17-jre)
 
-          Nasıl Çalıştırılır:
-          1. Terminalden:
-             chmod +x run.sh
+          Kolay Kurulum (Masaüstü & Menü Entegrasyonu):
+          1. ./install.sh
+             (Uygulamayı otomatik olarak Kali / Linux sistem menüsüne ekler)
+
+          Doğrudan Başlatma:
+          1. chmod +x run.sh
              ./run.sh
 
-          2. Masaüstü menüsüne eklemek için:
-             cp postgres-ddl-studio.desktop ~/.local/share/applications/
-
-          3. Komut satırından (CLI):
-             java -jar PostgreSQL-DDL-Studio.jar -db:POSTGRESQL -od:./export_output -s:profiles.json
+          2. Doğrudan Java ile:
+             java -jar PostgreSQL-DDL-Studio.jar
           ========================================================================
           EOF
-          chmod +x "$LINUX_DIR/run.sh"
+          chmod +x "$LINUX_DIR/run.sh" "$LINUX_DIR/install.sh"
           tar -czf "PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz" "$LINUX_DIR"
           rm -rf "$LINUX_DIR"
+
+          # Build .deb Package
+          /bin/bash scripts/linux/build_deb.sh || true
 
       - name: Save Unix Artifacts
         uses: actions/upload-artifact@v4
@@ -231,14 +235,16 @@ jobs:
             ### 📥 İndirme Paketleri (Binary Assets):
             - 🪟 **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.4.0.exe` ⭐ *(Önerilen)*
             - 🍏 **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.4.0-macOS.dmg`
+            - 🐧 **Linux (.deb Kurulum Paketi - Kali/Debian/Ubuntu):** `PostgreSQL-DDL-Studio-5.4.0-Linux.deb` ⭐
+            - 🐧 **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz`
             - 🪟 **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.4.0-Windows.zip`
-            - 🐧 **Linux (.tar.gz):** `PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz`
             - ☕ **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
           files: |
             release_assets/PostgreSQL-DDL-Studio-Setup-5.4.0.exe
             release_assets/PostgreSQL-DDL-Studio-5.4.0-macOS.dmg
-            release_assets/PostgreSQL-DDL-Studio-5.4.0-Windows.zip
+            release_assets/PostgreSQL-DDL-Studio-5.4.0-Linux.deb
             release_assets/PostgreSQL-DDL-Studio-5.4.0-Linux.tar.gz
+            release_assets/PostgreSQL-DDL-Studio-5.4.0-Windows.zip
             release_assets/postgres_ddl_export_console_java-1.0.0.jar
           draft: false
           prerelease: false
