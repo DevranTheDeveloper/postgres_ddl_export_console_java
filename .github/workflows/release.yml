@@ -30,6 +30,7 @@ jobs:
       - name: Create macOS App & Drag-and-Drop DMG Installer
         run: |
           APP_DIR="PostgreSQL DDL Studio.app"
+          rm -rf "$APP_DIR"
           mkdir -p "$APP_DIR/Contents/MacOS"
           mkdir -p "$APP_DIR/Contents/Resources"
           
@@ -37,12 +38,8 @@ jobs:
           cp src/main/resources/AppIcon.icns "$APP_DIR/Contents/Resources/AppIcon.icns"
           cp target/postgres_ddl_export_console_java-1.0.0.jar "$APP_DIR/Contents/MacOS/app.jar"
           
-          # Launcher script
-          cat << 'EOF' > "$APP_DIR/Contents/MacOS/launcher"
-          #!/bin/bash
-          DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-          java -Xdock:name="PostgreSQL DDL Studio" -jar "$DIR/app.jar"
-          EOF
+          # Use smart launcher script
+          cp scripts/macos/launcher "$APP_DIR/Contents/MacOS/launcher"
           chmod 755 "$APP_DIR/Contents/MacOS/launcher"
           
           # Info.plist
@@ -58,23 +55,36 @@ jobs:
               <key>CFBundleIdentifier</key>
               <string>com.ddlexporter.app</string>
               <key>CFBundleVersion</key>
-              <string>5.5.0</string>
+              <string>5.5.7</string>
               <key>CFBundleShortVersionString</key>
-              <string>5.5.0</string>
+              <string>5.5.7</string>
               <key>CFBundlePackageType</key>
               <string>APPL</string>
               <key>CFBundleExecutable</key>
               <string>launcher</string>
               <key>CFBundleIconFile</key>
               <string>AppIcon</string>
+              <key>NSHumanReadableCopyright</key>
+              <string>Copyright © 2026 Devran Sever. All rights reserved.</string>
+              <key>LSMinimumSystemVersion</key>
+              <string>10.15</string>
+              <key>NSHighResolutionCapable</key>
+              <true/>
+              <key>LSApplicationCategoryType</key>
+              <string>public.app-category.developer-tools</string>
           </dict>
           </plist>
           EOF
-          
+
+          # Clean extended attributes and sign ad-hoc
+          xattr -cr "$APP_DIR" 2>/dev/null || true
+          codesign --force --deep --sign - "$APP_DIR" 2>/dev/null || true
+          chmod +x scripts/macos/Guvenlik_Iznini_Ver.command
+
       - name: Build Professional Drag-and-Drop DMG Installer
         run: |
           brew install create-dmg dpkg || true
-          OUTPUT_DMG="PostgreSQL-DDL-Studio-5.5.6-macOS.dmg"
+          OUTPUT_DMG="PostgreSQL-DDL-Studio-5.5.7-macOS.dmg"
           rm -f "$OUTPUT_DMG"
           
           create-dmg \
@@ -84,14 +94,16 @@ jobs:
             --window-pos 200 120 \
             --window-size 600 400 \
             --icon-size 110 \
-            --icon "PostgreSQL DDL Studio.app" 150 200 \
+            --icon "PostgreSQL DDL Studio.app" 150 180 \
             --hide-extension "PostgreSQL DDL Studio.app" \
-            --app-drop-link 450 200 \
+            --app-drop-link 450 180 \
             "$OUTPUT_DMG" \
             "PostgreSQL DDL Studio.app" || {
               STAGING="dmg_staging"
               mkdir -p "$STAGING"
               cp -R "PostgreSQL DDL Studio.app" "$STAGING/"
+              cp "scripts/macos/Guvenlik_Iznini_Ver.command" "$STAGING/İlk Açılışta Güvenlik İzni Ver.command"
+              chmod 755 "$STAGING/İlk Açılışta Güvenlik İzni Ver.command"
               ln -s /Applications "$STAGING/Applications"
               hdiutil create -volname "PostgreSQL DDL Studio" -srcfolder "$STAGING" -ov -format UDZO "$OUTPUT_DMG"
               rm -rf "$STAGING"

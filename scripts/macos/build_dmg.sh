@@ -34,9 +34,9 @@ else
     <key>CFBundleIdentifier</key>
     <string>com.ddlexporter.app</string>
     <key>CFBundleVersion</key>
-    <string>5.5.6</string>
+    <string>5.5.7</string>
     <key>CFBundleShortVersionString</key>
-    <string>5.5.6</string>
+    <string>5.5.7</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -54,7 +54,7 @@ EOF
     codesign --force --deep --sign - "$RESOLVED_APP_PATH" 2>/dev/null || true
 fi
 
-OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.6-macOS.dmg}"
+OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.7-macOS.dmg}"
 BG_IMG="scripts/macos/dmg_bg.png"
 BG_IMG_2X="scripts/macos/dmg_bg@2x.png"
 
@@ -80,9 +80,13 @@ hdiutil create -size "${DMG_SIZE_MB}m" -volname "$VOL_NAME" -fs HFS+ "$TMP_DMG"
 DEVICE=$(hdiutil attach -readwrite -noverify -noautoopen "$TMP_DMG" | grep Apple_HFS | awk '{print $1}')
 echo "Mount edildi: $DEVICE -> $MOUNT_DIR"
 
-# 5. Copy App & Applications Symlink
+# 5. Copy App & Applications Symlink & Security Helper
 cp -R "$RESOLVED_APP_PATH" "$MOUNT_DIR/"
 ln -s /Applications "$MOUNT_DIR/Applications"
+if [ -f "scripts/macos/Guvenlik_Iznini_Ver.command" ]; then
+    cp "scripts/macos/Guvenlik_Iznini_Ver.command" "$MOUNT_DIR/İlk Açılışta Güvenlik İzni Ver.command"
+    chmod 755 "$MOUNT_DIR/İlk Açılışta Güvenlik İzni Ver.command"
+fi
 
 # 6. Add background folder & images
 mkdir -p "$MOUNT_DIR/.background"
@@ -108,6 +112,9 @@ tell application "Finder"
         -- Set icon positions (Left: App, Right: Applications)
         set position of item "$APP_NAME" of container window to {150, 180}
         set position of item "Applications" of container window to {450, 180}
+        try
+            set position of item "İlk Açılışta Güvenlik İzni Ver.command" of container window to {300, 310}
+        end try
         
         update without registering applications
         delay 2
