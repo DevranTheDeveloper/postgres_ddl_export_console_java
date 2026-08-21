@@ -3,10 +3,10 @@
 ; ========================================================================
 
 #define MyAppName "PostgreSQL DDL Studio"
-#define MyAppVersion "5.5.9"
+#define MyAppVersion "5.6.0"
 #define MyAppPublisher "Devran Sever"
 #define MyAppURL "https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java"
-#define MyAppExeName "PostgreSQL-DDL-Studio.bat"
+#define MyAppExeName "PostgreSQL-DDL-Studio.vbs"
 #define MyAppIcoName "AppIcon.ico"
 
 [Setup]
@@ -39,13 +39,13 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
 ; Windows PE Version & Security Metadata
-VersionInfoVersion=5.5.9.0
-VersionInfoTextVersion=5.5.9
+VersionInfoVersion=5.6.0.0
+VersionInfoTextVersion=5.6.0
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup Installer
 VersionInfoCopyright=Copyright (C) 2026 {#MyAppPublisher}. All rights reserved.
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=5.5.9.0
+VersionInfoProductVersion=5.6.0.0
 VersionInfoOriginalFileName=PostgreSQL-DDL-Studio-Setup-{#MyAppVersion}.exe
 MinVersion=6.1sp1
 
@@ -66,9 +66,9 @@ Source: "..\..\src\main\resources\AppIcon.ico"; DestDir: "{app}"; Flags: ignorev
 Source: "README-Windows.txt"; DestDir: "{app}"; Flags: ignoreversion isreadme
 
 [Icons]
-Name: "{group}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.bat"; IconFilename: "{app}\AppIcon.ico"
+Name: "{group}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; IconFilename: "{app}\AppIcon.ico"
 Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.bat"; IconFilename: "{app}\AppIcon.ico"; Tasks: desktopicon
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; IconFilename: "{app}\AppIcon.ico"; Tasks: desktopicon
 
 [Run]
-Filename: "{app}\PostgreSQL-DDL-Studio.bat"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec postinstall nowait skipifsilent
+Filename: "{app}\PostgreSQL-DDL-Studio.vbs"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: shellexec postinstall nowait skipifsilent

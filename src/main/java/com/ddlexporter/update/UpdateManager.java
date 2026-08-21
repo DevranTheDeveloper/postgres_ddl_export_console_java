@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.9";
+    public static final String CURRENT_VERSION = "5.6.0";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -275,6 +275,7 @@ public class UpdateManager {
             // Windows detached updater batch script with retry loop and multi-target overwrite
             File updaterBat = File.createTempFile("pg_ddl_win_patcher", ".bat");
             File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
+            File winVbsScript = new File(appDir, "PostgreSQL-DDL-Studio.vbs");
 
             StringBuilder bat = new StringBuilder();
             bat.append("@echo off\r\n");
@@ -283,6 +284,7 @@ public class UpdateManager {
             bat.append("set \"SRC=").append(downloadedFile.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"APP_DIR=").append(appDir.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"BAT=").append(winBatScript.getAbsolutePath()).append("\"\r\n");
+            bat.append("set \"VBS=").append(winVbsScript.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"RUNNING=").append(runningJar.getAbsolutePath()).append("\"\r\n");
             bat.append("\r\n");
             bat.append("cd /d \"%APP_DIR%\"\r\n");
@@ -314,7 +316,9 @@ public class UpdateManager {
             bat.append("del /f /q \"%SRC%\" 2>nul\r\n");
             bat.append("del /f /q \"%PENDING%\" 2>nul\r\n");
             bat.append("cd /d \"%APP_DIR%\"\r\n");
-            bat.append("if exist \"%BAT%\" (\r\n");
+            bat.append("if exist \"%VBS%\" (\r\n");
+            bat.append("    start \"\" /d \"%APP_DIR%\" wscript.exe //nologo \"%VBS%\"\r\n");
+            bat.append(") else if exist \"%BAT%\" (\r\n");
             bat.append("    start \"\" /d \"%APP_DIR%\" \"%BAT%\"\r\n");
             bat.append(") else (\r\n");
             bat.append("    start \"\" /d \"%APP_DIR%\" javaw -jar \"PostgreSQL-DDL-Studio.jar\"\r\n");
@@ -323,7 +327,14 @@ public class UpdateManager {
 
             java.nio.file.Files.writeString(updaterBat.toPath(), bat.toString());
 
-            new ProcessBuilder("cmd.exe", "/c", updaterBat.getAbsolutePath()).start();
+            // Run updater script completely silently using VBS wrapper (0 = hidden)
+            File updaterVbs = File.createTempFile("pg_ddl_win_patcher_launcher", ".vbs");
+            String vbs = "Set sh = CreateObject(\"WScript.Shell\")\r\n" +
+                         "sh.Run \"cmd.exe /c \"\"" + updaterBat.getAbsolutePath() + "\"\"\", 0, False\r\n" +
+                         "Set sh = Nothing\r\n";
+            java.nio.file.Files.writeString(updaterVbs.toPath(), vbs);
+
+            new ProcessBuilder("wscript.exe", "//nologo", updaterVbs.getAbsolutePath()).start();
             System.exit(0);
 
         } else {
