@@ -3,7 +3,7 @@
 ; ========================================================================
 
 #define MyAppName "PostgreSQL DDL Studio"
-#define MyAppVersion "5.4.0"
+#define MyAppVersion "5.5.0"
 #define MyAppPublisher "Devran Sever"
 #define MyAppURL "https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java"
 #define MyAppExeName "PostgreSQL-DDL-Studio.bat"

@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.4.0";
+    public static final String CURRENT_VERSION = "5.5.0";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 

@@ -34,9 +34,9 @@ else
     <key>CFBundleIdentifier</key>
     <string>com.ddlexporter.app</string>
     <key>CFBundleVersion</key>
-    <string>5.4.0</string>
+    <string>5.5.0</string>
     <key>CFBundleShortVersionString</key>
-    <string>5.4.0</string>
+    <string>5.5.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>CFBundleExecutable</key>
@@ -48,7 +48,7 @@ else
 EOF
 fi
 
-OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.4.0-macOS.dmg}"
+OUTPUT_DMG="${OUTPUT_DMG:-/Users/devransever/Desktop/PostgreSQL-DDL-Studio-5.5.0-macOS.dmg}"
 BG_IMG="scripts/macos/dmg_bg.png"
 BG_IMG_2X="scripts/macos/dmg_bg@2x.png"
 
