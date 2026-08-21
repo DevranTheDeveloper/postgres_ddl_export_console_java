@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.1";
+    public static final String CURRENT_VERSION = "5.5.2";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -218,42 +218,94 @@ public class UpdateManager {
 
         File appDir = runningJar.getParentFile() != null ? runningJar.getParentFile() : new File(".");
 
-        if (os.contains("win")) {
-            // Windows atomic updater script
-            File updaterBat = new File(appDir, "update_runner.bat");
-            String batContent = "@echo off\r\n" +
-                    "ping 127.0.0.1 -n 2 >nul\r\n" +
-                    "move /y \"" + downloadedFile.getAbsolutePath() + "\" \"" + runningJar.getAbsolutePath() + "\"\r\n" +
-                    "if exist \"" + new File(appDir, "PostgreSQL-DDL-Studio.bat").getAbsolutePath() + "\" (\r\n" +
-                    "    start \"\" \"" + new File(appDir, "PostgreSQL-DDL-Studio.bat").getAbsolutePath() + "\"\r\n" +
-                    ") else (\r\n" +
-                    "    start \"\" javaw -jar \"" + runningJar.getAbsolutePath() + "\"\r\n" +
-                    ")\r\n" +
-                    "del \"%~f0\"\r\n" +
-                    "exit\r\n";
-            java.nio.file.Files.writeString(updaterBat.toPath(), batContent);
-
-            new ProcessBuilder("cmd.exe", "/c", updaterBat.getAbsolutePath())
-                    .directory(appDir)
-                    .start();
-        } else {
-            // Linux & macOS atomic inode replacement and relaunch
-            java.nio.file.Files.move(downloadedFile.toPath(), runningJar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            runningJar.setExecutable(true);
-
-            File linuxRunScript = new File(appDir, "run.sh");
-            if (linuxRunScript.exists() && linuxRunScript.canExecute()) {
-                new ProcessBuilder(linuxRunScript.getAbsolutePath())
-                        .directory(appDir)
-                        .start();
-            } else {
-                new ProcessBuilder("java", "-jar", runningJar.getAbsolutePath())
-                        .directory(appDir)
-                        .start();
+        if (os.contains("mac")) {
+            // Find macOS .app bundle directory if running inside an app bundle
+            File appBundle = null;
+            File current = runningJar;
+            while (current != null) {
+                if (current.getName().endsWith(".app")) {
+                    appBundle = current;
+                    break;
+                }
+                current = current.getParentFile();
             }
-        }
 
-        System.exit(0);
+            File updaterSh = File.createTempFile("pg_ddl_mac_updater", ".sh");
+            long currentPid = ProcessHandle.current().pid();
+
+            StringBuilder sh = new StringBuilder();
+            sh.append("#!/bin/bash\n");
+            sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
+            sh.append("cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            if (appBundle != null) {
+                sh.append("open -n \"").append(appBundle.getAbsolutePath()).append("\"\n");
+            } else {
+                sh.append("java -jar \"").append(runningJar.getAbsolutePath()).append("\" &\n");
+            }
+            sh.append("rm -f \"$0\"\n");
+            sh.append("exit 0\n");
+
+            java.nio.file.Files.writeString(updaterSh.toPath(), sh.toString());
+            updaterSh.setExecutable(true);
+
+            new ProcessBuilder("/bin/bash", updaterSh.getAbsolutePath()).start();
+            System.exit(0);
+
+        } else if (os.contains("win")) {
+            // Windows detached updater batch script
+            File updaterBat = File.createTempFile("pg_ddl_win_updater", ".bat");
+            long currentPid = ProcessHandle.current().pid();
+
+            StringBuilder bat = new StringBuilder();
+            bat.append("@echo off\r\n");
+            bat.append(":wait\r\n");
+            bat.append("tasklist /fi \"PID eq ").append(currentPid).append("\" | findstr /i \"").append(currentPid).append("\" >nul\r\n");
+            bat.append("if not errorlevel 1 (\r\n");
+            bat.append("    timeout /t 1 /nobreak >nul\r\n");
+            bat.append("    goto wait\r\n");
+            bat.append(")\r\n");
+            bat.append("copy /y \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\r\n");
+            File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
+            if (winBatScript.exists()) {
+                bat.append("start \"\" \"").append(winBatScript.getAbsolutePath()).append("\"\r\n");
+            } else {
+                bat.append("start \"\" javaw -jar \"").append(runningJar.getAbsolutePath()).append("\"\r\n");
+            }
+            bat.append("del \"%~f0\"\r\n");
+            bat.append("exit\r\n");
+
+            java.nio.file.Files.writeString(updaterBat.toPath(), bat.toString());
+
+            new ProcessBuilder("cmd.exe", "/c", updaterBat.getAbsolutePath()).start();
+            System.exit(0);
+
+        } else {
+            // Linux detached POSIX updater
+            File updaterSh = File.createTempFile("pg_ddl_linux_updater", ".sh");
+            long currentPid = ProcessHandle.current().pid();
+
+            StringBuilder sh = new StringBuilder();
+            sh.append("#!/bin/bash\n");
+            sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
+            sh.append("cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            File linuxRunScript = new File(appDir, "run.sh");
+            if (linuxRunScript.exists()) {
+                sh.append("chmod +x \"").append(linuxRunScript.getAbsolutePath()).append("\"\n");
+                sh.append("\"").append(linuxRunScript.getAbsolutePath()).append("\" &\n");
+            } else {
+                sh.append("java -jar \"").append(runningJar.getAbsolutePath()).append("\" &\n");
+            }
+            sh.append("rm -f \"$0\"\n");
+            sh.append("exit 0\n");
+
+            java.nio.file.Files.writeString(updaterSh.toPath(), sh.toString());
+            updaterSh.setExecutable(true);
+
+            new ProcessBuilder("/bin/bash", updaterSh.getAbsolutePath()).start();
+            System.exit(0);
+        }
     }
 
     private static File getRunningJarFile() {
