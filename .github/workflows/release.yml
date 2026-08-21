@@ -73,7 +73,7 @@ jobs:
           
       - name: Build Professional Drag-and-Drop DMG Installer
         run: |
-          brew install create-dmg || true
+          brew install create-dmg dpkg || true
           OUTPUT_DMG="PostgreSQL-DDL-Studio-5.5.1-macOS.dmg"
           rm -f "$OUTPUT_DMG"
           
@@ -121,7 +121,7 @@ jobs:
           
           cat << 'EOF' > "$LINUX_DIR/README-Linux.txt"
           ========================================================================
-            🐧 PostgreSQL DDL Studio - Linux Portable Edition
+            Linux Portable Edition
           ========================================================================
 
           Gereksinimler:
@@ -144,7 +144,7 @@ jobs:
           tar -czf "PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz" "$LINUX_DIR"
           rm -rf "$LINUX_DIR"
 
-          # Build .deb Package
+          # Build .deb Package if dpkg-deb is available
           /bin/bash scripts/linux/build_deb.sh || true
 
       - name: Save Unix Artifacts
@@ -152,10 +152,10 @@ jobs:
         with:
           name: unix-artifacts
           path: |
-            PostgreSQL-DDL-Studio-5.5.1-macOS.dmg
-            PostgreSQL-DDL-Studio-5.5.1-Windows.zip
-            PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz
-            PostgreSQL-DDL-Studio-5.5.1-Linux.deb
+            *.dmg
+            *.zip
+            *.tar.gz
+            *.deb
             target/postgres_ddl_export_console_java-1.0.0.jar
 
   build-windows-exe:
@@ -191,7 +191,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: windows-exe-artifact
-          path: dist/PostgreSQL-DDL-Studio-Setup-5.5.1.exe
+          path: dist/*.exe
 
   publish-release:
     name: Publish Release to GitHub
@@ -219,38 +219,33 @@ jobs:
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
+          token: ${{ secrets.GITHUB_TOKEN }}
           name: "PostgreSQL DDL Studio ${{ github.ref_name }} (Cross-Platform Multi-OS Edition)"
           body: |
-            ## 🚀 PostgreSQL DDL Studio ${{ github.ref_name }} Yayında!
+            ## PostgreSQL DDL Studio ${{ github.ref_name }} Yayında!
             
             PostgreSQL DDL Studio artık **Windows** için tam otomatik Türkçe/İngilizce **Kurulum Sihirbazı (.exe Setup)**, **macOS** için yeni sürükle-bırak **.dmg** yükleyicisi ve **Linux** için hazır portable paket sunmaktadır.
             
-            ### ✨ Öne Çıkan Özellikler:
-            - **⚡ Evrensel Veritabanı & Docker Asistanı:** Docker konteynerlerini otomatik algılama, tek tıkla yeni demo PostgreSQL başlatma, Neon / Supabase / AWS RDS bağlantı dizelerini (URI) otomatik çözme ve test şeması yükleme (Seed Data).
-            - **🪟 Windows Native Kurulum Sihirbazı:** Kurulum dizini seçimi, Masaüstü ve Başlat Menüsü simgeleri, otomatik kaldırma aracı (Uninstaller) içeren modern `.exe` Setup.
-            - **📂 İnteraktif Şema Gezgini:** Hiyerarşik ağaç, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme.
-            - **🗺️ Görsel ERD Haritası:** Panning, zooming (%20-%300), sürüklenebilir tablo kartları, Bézier ilişkileri, Mermaid ve PNG dışa aktarma.
-            - **🌐 Canlı Ortam Karşılaştırma (Diff):** Staging vs Production fark tespiti, otomatik dağıtım yaması (Deploy Patch) üretimi ve veri kaybı koruması.
-            - **📊 Canlı Sunucu Durumu & Performans:** Bağlantı havuzu, toplam boyut, önbellek verimliliği (%99+), Java2D grafikleri ve sistem teşhisi.
-            - **⏱️ Otomatik Zamanlanmış Yedekleme (Cron):** Arka planda sessiz DDL yedekleme, otomatik Git commit ve durdurma/başlatma kontrolü.
-            - **🛡️ Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve AppPathHelper güvenli yapılandırma saklama.
+            ### Öne Çıkan Özellikler:
+            - **Evrensel Veritabanı & Docker Asistanı:** Docker konteynerlerini otomatik algılama, tek tıkla yeni demo PostgreSQL başlatma, Neon / Supabase / AWS RDS bağlantı dizelerini (URI) otomatik çözme ve test şeması yükleme (Seed Data).
+            - **Windows Native Kurulum Sihirbazı:** Kurulum dizini seçimi, Masaüstü ve Başlat Menüsü simgeleri, otomatik kaldırma aracı (Uninstaller) içeren modern `.exe` Setup.
+            - **İnteraktif Şema Gezgini:** Hiyerarşik ağaç, anında düzenleme, SQL formatlama ve tek tıkla ZIP arşivleme.
+            - **Görsel ERD Haritası:** Panning, zooming (%20-%300), sürüklenebilir tablo kartları, Bézier ilişkileri, Mermaid ve PNG dışa aktarma.
+            - **Canlı Ortam Karşılaştırma (Diff):** Staging vs Production fark tespiti, otomatik dağıtım yaması (Deploy Patch) üretimi ve veri kaybı koruması.
+            - **Canlı Sunucu Durumu & Performans:** Bağlantı havuzu, toplam boyut, önbellek verimliliği (%99+), Java2D grafikleri ve sistem teşhisi.
+            - **Otomatik Zamanlanmış Yedekleme (Cron):** Arka planda sessiz DDL yedekleme, otomatik Git commit ve durdurma/başlatma kontrolü.
+            - **Kurumsal Güvenlik Kalkanı:** AES-256 GCM parola şifreleme, Git sızıntı kalkanı ve AppPathHelper güvenli yapılandırma saklama.
             
             ---
-            ### 📥 İndirme Paketleri (Binary Assets):
-            - 🪟 **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.5.1.exe` ⭐ *(Önerilen)*
-            - 🍏 **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.5.1-macOS.dmg`
-            - 🐧 **Linux (.deb Kurulum Paketi - Kali/Debian/Ubuntu):** `PostgreSQL-DDL-Studio-5.5.1-Linux.deb` ⭐
-            - 🐧 **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz`
-            - 🪟 **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.5.1-Windows.zip`
-            - ☕ **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
-            - 🔒 **Güvenlik Doğrulama:** `SHA256SUMS.txt`
-          files: |
-            release_assets/PostgreSQL-DDL-Studio-Setup-5.5.1.exe
-            release_assets/PostgreSQL-DDL-Studio-5.5.1-macOS.dmg
-            release_assets/PostgreSQL-DDL-Studio-5.5.1-Linux.deb
-            release_assets/PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz
-            release_assets/PostgreSQL-DDL-Studio-5.5.1-Windows.zip
-            release_assets/postgres_ddl_export_console_java-1.0.0.jar
-            release_assets/SHA256SUMS.txt
+            ### İndirme Paketleri (Binary Assets):
+            - **Windows (.exe Kurulum Sihirbazı):** `PostgreSQL-DDL-Studio-Setup-5.5.1.exe` *(Önerilen)*
+            - **macOS (.dmg Yükleyici):** `PostgreSQL-DDL-Studio-5.5.1-macOS.dmg`
+            - **Linux (.deb Kurulum Paketi - Kali/Debian/Ubuntu):** `PostgreSQL-DDL-Studio-5.5.1-Linux.deb`
+            - **Linux Portable (.tar.gz):** `PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz`
+            - **Windows Portable (.zip):** `PostgreSQL-DDL-Studio-5.5.1-Windows.zip`
+            - **Evrensel JAR (Tüm Sistemler & CLI):** `postgres_ddl_export_console_java-1.0.0.jar`
+            - **Güvenlik Doğrulama:** `SHA256SUMS.txt`
+          files: release_assets/*
+          fail_on_unmatched_files: false
           draft: false
           prerelease: false
