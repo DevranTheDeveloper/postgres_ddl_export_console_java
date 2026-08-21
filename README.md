@@ -1,4 +1,4 @@
-# PostgreSQL DDL Studio (v5.5.0)
+# PostgreSQL DDL Studio (v5.5.1)
 
 [![Build and Release Multi-OS](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/actions/workflows/release.yml/badge.svg)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -6,20 +6,20 @@
 [![PostgreSQL 12+](https://img.shields.io/badge/PostgreSQL-12%2B-336791.svg)](https://www.postgresql.org/)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/pulls)
 
-**PostgreSQL DDL Studio**, PostgreSQL veritabanları için geliştirilmiş modern, kurumsal düzeyde bir **Şema Gezgini (Schema Explorer)**, **Görsel İlişki Haritası (ERD)**, **Canlı Şema Farkı Karşılaştırıcı (Live Diff Engine)** ve **Otomatik DDL Yedekleme** stüdyosudur.
+**PostgreSQL DDL Studio**, modern PostgreSQL veritabanları için geliştirilmiş; interaktif şema gezgini, görsel ERD ilişki haritası, evrensel Docker ve bulut (Neon, Supabase, AWS RDS) bağlantı asistanı, canlı sunucu performans izleme paneli, çoklu ortam şema farkı (Diff) motoru, arka plan zamanlanmış otomatik yedekleme (Cron) ve kurumsal düzeyde AES-256 GCM güvenlik kalkanı sunan **çok platformlu (Cross-Platform)** profesyonel bir masaüstü geliştirici stüdyosudur.
 
 ---
 
 ## 📦 İndirme & Sürümler (Downloads & Releases)
 
-En son sürüm olan **v5.5.0** paketlerini doğrudan aşağıdaki bağlantılardan indirebilirsiniz:
+En son sürüm olan **v5.5.1** paketlerini doğrudan aşağıdaki bağlantılardan indirebilirsiniz:
 
 | Platform | Format / Paket | İndirme Bağlantısı | Açıklama |
 | :--- | :--- | :--- | :--- |
-| 🪟 **Windows** | **`.exe` Kurulum Sihirbazı** | [📥 **PostgreSQL-DDL-Studio-Setup-5.5.0.exe**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-Setup-5.5.0.exe) | ⭐ **Önerilen**: İleri-İleri Kurulum Sihirbazı, Masaüstü/Başlat Simgeleri |
-| 🍏 **macOS** | `.dmg` Yükleyici | [📥 **PostgreSQL-DDL-Studio-5.5.0-macOS.dmg**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.0-macOS.dmg) | Apple Silicon (M1-M4) & Intel, Sürükle-Bırak Kurulum |
-| 🪟 **Windows** | Taşınabilir `.zip` | [📥 **PostgreSQL-DDL-Studio-5.5.0-Windows.zip**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.0-Windows.zip) | Kurulum gerektirmeyen taşınabilir (Portable) paket |
-| 🐧 **Linux** | Portable `.tar.gz` | [📥 **PostgreSQL-DDL-Studio-5.5.0-Linux.tar.gz**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.0-Linux.tar.gz) | Ubuntu, Debian, Fedora, Arch (`run.sh` / `.desktop`) |
+| 🪟 **Windows** | **`.exe` Kurulum Sihirbazı** | [📥 **PostgreSQL-DDL-Studio-Setup-5.5.1.exe**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-Setup-5.5.1.exe) | ⭐ **Önerilen**: İleri-İleri Kurulum Sihirbazı, Masaüstü/Başlat Simgeleri |
+| 🍏 **macOS** | `.dmg` Yükleyici | [📥 **PostgreSQL-DDL-Studio-5.5.1-macOS.dmg**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.1-macOS.dmg) | Apple Silicon (M1-M4) & Intel, Sürükle-Bırak Kurulum |
+| 🪟 **Windows** | Taşınabilir `.zip` | [📥 **PostgreSQL-DDL-Studio-5.5.1-Windows.zip**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.1-Windows.zip) | Kurulum gerektirmeyen taşınabilir (Portable) paket |
+| 🐧 **Linux** | Portable `.tar.gz` | [📥 **PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/PostgreSQL-DDL-Studio-5.5.1-Linux.tar.gz) | Ubuntu, Debian, Fedora, Arch (`run.sh` / `.desktop`) |
 | ☕ **Evrensel JAR** | Fat `.jar` | [📥 **postgres_ddl_export_console_java-1.0.0.jar**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/latest/download/postgres_ddl_export_console_java-1.0.0.jar) | Tüm platformlar, CLI ve Sunucu otomasyonu |
 
 ---

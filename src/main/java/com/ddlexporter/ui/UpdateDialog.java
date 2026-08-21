@@ -12,10 +12,10 @@ public class UpdateDialog extends JDialog {
     private final UpdateManager.ReleaseInfo releaseInfo;
     private final UpdateManager updateManager;
     private final JProgressBar progressBar = new JProgressBar(0, 100);
-    private final JLabel statusLabel = new JLabel("Yeni bir sürüm hazır!");
-    private final JButton updateBtn = new JButton("🚀 Şimdi Güncelle & Yeniden Başlat");
+    private final JLabel statusLabel = new JLabel("Yeni bir sürüm hazır.");
+    private final JButton updateBtn = new JButton("Şimdi Güncelle ve Yeniden Başlat");
     private final JButton cancelBtn = new JButton("Daha Sonra");
-    private final JButton browserBtn = new JButton("🌐 GitHub'da İncele");
+    private final JButton browserBtn = new JButton("GitHub Sayfasını Aç");
 
     public UpdateDialog(Frame owner, UpdateManager.ReleaseInfo releaseInfo, UpdateManager updateManager) {
         super(owner, "Yazılım Güncellemesi", true);
@@ -34,22 +34,18 @@ public class UpdateDialog extends JDialog {
         JPanel mainPanel = new JPanel(new BorderLayout(0, 16));
         mainPanel.setBorder(new EmptyBorder(20, 24, 20, 24));
 
-        // Header Panel with Icon & Version Info
+        // Header Panel with Version Info
         JPanel headerPanel = new JPanel(new BorderLayout(14, 0));
         headerPanel.setOpaque(false);
-
-        JLabel iconLabel = new JLabel("🚀");
-        iconLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 36));
-        headerPanel.add(iconLabel, BorderLayout.WEST);
 
         JPanel infoPanel = new JPanel(new GridLayout(2, 1, 0, 4));
         infoPanel.setOpaque(false);
 
-        JLabel titleLabel = new JLabel(releaseInfo.updateAvailable ? "Yeni Bir Sürüm Yayınlandı!" : "Uygulamanız Güncel");
+        JLabel titleLabel = new JLabel(releaseInfo.updateAvailable ? "Yeni Bir Sürüm Yayınlandı" : "Uygulamanız Güncel");
         titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
 
         String versionText = "Mevcut Sürüm: v" + UpdateManager.CURRENT_VERSION +
-                (releaseInfo.updateAvailable ? "  ➔  Yeni Sürüm: " + releaseInfo.tagName : " (En Son Sürüm)");
+                (releaseInfo.updateAvailable ? "  ->  Yeni Sürüm: " + releaseInfo.tagName : " (En Son Sürüm)");
         JLabel verLabel = new JLabel(versionText);
         verLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
         verLabel.setForeground(releaseInfo.updateAvailable ? new Color(34, 197, 94) : null);
@@ -64,7 +60,7 @@ public class UpdateDialog extends JDialog {
         JPanel centerPanel = new JPanel(new BorderLayout(0, 8));
         centerPanel.setOpaque(false);
 
-        JLabel notesHeader = new JLabel("📋 Sürüm Değişiklikleri & Yenilikler:");
+        JLabel notesHeader = new JLabel("Sürüm Değişiklikleri ve Yenilikler:");
         notesHeader.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
         centerPanel.add(notesHeader, BorderLayout.NORTH);
 
@@ -115,7 +111,7 @@ public class UpdateDialog extends JDialog {
         cancelBtn.addActionListener(e -> dispose());
 
         updateBtn.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 12));
-        updateBtn.setEnabled(releaseInfo.updateAvailable && releaseInfo.jarDownloadUrl != null);
+        updateBtn.setEnabled(releaseInfo.updateAvailable);
         updateBtn.addActionListener(e -> startDownloadAndUpdate());
 
         rightActions.add(cancelBtn);
@@ -129,12 +125,12 @@ public class UpdateDialog extends JDialog {
     }
 
     private void startDownloadAndUpdate() {
-        if (releaseInfo.jarDownloadUrl == null || releaseInfo.jarDownloadUrl.isBlank()) {
-            JOptionPane.showMessageDialog(this,
-                    "Otomatik indirme paketi bulunamadı. Lütfen GitHub sayfasından manuel indirin.",
-                    "İndirme Paketi Yok", JOptionPane.WARNING_MESSAGE);
-            return;
+        String downloadUrl = releaseInfo.jarDownloadUrl;
+        if (downloadUrl == null || downloadUrl.isBlank()) {
+            downloadUrl = "https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/" + releaseInfo.tagName + "/postgres_ddl_export_console_java-1.0.0.jar";
         }
+
+        final String finalUrl = downloadUrl;
 
         updateBtn.setEnabled(false);
         cancelBtn.setEnabled(false);
@@ -153,13 +149,13 @@ public class UpdateDialog extends JDialog {
                     downloadedTemp = File.createTempFile("PostgreSQL-DDL-Studio-update", ".jar");
                     downloadedTemp.deleteOnExit();
 
-                    updateManager.downloadUpdate(releaseInfo.jarDownloadUrl, downloadedTemp, (readBytes, totalBytes) -> {
+                    updateManager.downloadUpdate(finalUrl, downloadedTemp, (readBytes, totalBytes) -> {
                         int percent = (int) ((readBytes * 100) / totalBytes);
                         double readMb = readBytes / (1024.0 * 1024.0);
                         double totalMb = totalBytes / (1024.0 * 1024.0);
                         SwingUtilities.invokeLater(() -> {
-                            progressBar.setValue(percent);
-                            statusLabel.setText(String.format("İndiriliyor: %.1f MB / %.1f MB (%%%d)", readMb, totalMb, percent));
+                            progressBar.setValue(Math.min(100, Math.max(0, percent)));
+                            statusLabel.setText(String.format("İndiriliyor: %.1f MB / %.1f MB (%d%%)", readMb, totalMb, percent));
                         });
                     });
                 } catch (Exception ex) {
@@ -170,32 +166,28 @@ public class UpdateDialog extends JDialog {
 
             @Override
             protected void done() {
-                if (downloadError == null && downloadedTemp != null && downloadedTemp.exists() && downloadedTemp.length() > 0) {
-                    statusLabel.setText("İndirme tamamlandı! Uygulama yeniden başlatılıyor...");
-                    progressBar.setValue(100);
-
-                    Timer timer = new Timer(800, ev -> {
-                        try {
-                            UpdateManager.applyUpdateAndRestart(downloadedTemp);
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(UpdateDialog.this,
-                                    "Güncelleme uygulanamadı: " + ex.getMessage(),
-                                    "Hata", JOptionPane.ERROR_MESSAGE);
-                            updateBtn.setEnabled(true);
-                            cancelBtn.setEnabled(true);
-                        }
-                    });
-                    timer.setRepeats(false);
-                    timer.start();
-                } else {
-                    String msg = downloadError != null ? downloadError.getMessage() : "Bilinmeyen indirme hatası.";
-                    statusLabel.setText("İndirme başarısız oldu: " + msg);
-                    JOptionPane.showMessageDialog(UpdateDialog.this,
-                            "Güncelleme dosyası indirilemedi:\n" + msg,
-                            "Güncelleme Hatası", JOptionPane.ERROR_MESSAGE);
+                if (downloadError != null) {
+                    progressBar.setVisible(false);
                     updateBtn.setEnabled(true);
                     cancelBtn.setEnabled(true);
                     browserBtn.setEnabled(true);
+                    statusLabel.setText("İndirme başarısız oldu: " + downloadError.getMessage());
+                    JOptionPane.showMessageDialog(UpdateDialog.this,
+                            "Güncelleme paketi indirilemedi:\n" + downloadError.getMessage() +
+                                    "\n\nLütfen GitHub sayfasından doğrudan indirmeyi deneyin.",
+                            "İndirme Hatası", JOptionPane.ERROR_MESSAGE);
+                } else {
+                    statusLabel.setText("Güncelleme uygulanıyor ve yeniden başlatılıyor...");
+                    progressBar.setValue(100);
+                    try {
+                        UpdateManager.applyUpdateAndRestart(downloadedTemp);
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(UpdateDialog.this,
+                                "Güncelleme uygulanamadı:\n" + ex.getMessage(),
+                                "Yeniden Başlatma Hatası", JOptionPane.ERROR_MESSAGE);
+                        updateBtn.setEnabled(true);
+                        cancelBtn.setEnabled(true);
+                    }
                 }
             }
         }.execute();

@@ -44,7 +44,7 @@ public class JdbcDdlExtractor implements IDdlExtractor {
             extractTriggers(conn);
 
             logger.log("JDBC DDL Aktarım İşlemi Tamamlandı.");
-            logger.log("🎉 Toplam " + exportedCount + " adet veritabanı nesnesi dışa aktarıldı!");
+            logger.log("Toplam " + exportedCount + " adet veritabanı nesnesi dışa aktarıldı.");
 
         } catch (SQLException e) {
             throw new RuntimeException("JDBC ile DDL çıkarma hatası: " + e.getMessage(), e);

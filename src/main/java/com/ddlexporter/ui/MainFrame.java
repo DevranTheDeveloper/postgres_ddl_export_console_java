@@ -201,7 +201,7 @@ public class MainFrame extends JFrame {
         JPanel leftBrandProfilePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
         leftBrandProfilePanel.setOpaque(false);
 
-        titleLabel.setText("🐘 PostgreSQL DDL Studio");
+        titleLabel.setText("PostgreSQL DDL Studio");
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.BOLD, 15f));
         leftBrandProfilePanel.add(titleLabel);
 
@@ -246,7 +246,7 @@ public class MainFrame extends JFrame {
         rightControls.add(updateBtn);
 
         // Shortcuts & Help Guide Button
-        JButton shortcutsBtn = new JButton("⌨️ Kısayollar");
+        JButton shortcutsBtn = new JButton("Kısayollar");
         shortcutsBtn.setFont(shortcutsBtn.getFont().deriveFont(Font.PLAIN, 11f));
         shortcutsBtn.setToolTipText("Klavye kısayolları ve kullanım ipuçları");
         shortcutsBtn.setFocusable(false);
@@ -267,12 +267,12 @@ public class MainFrame extends JFrame {
         navTabBar.removeAll();
         tabButtons.clear();
 
-        tabButtons.add(createTabButton("📁 Şema & SQL Gezgini", CARD_SCHEMA));
-        tabButtons.add(createTabButton("🗺️ İlişki Haritası (ERD)", CARD_ERD));
-        tabButtons.add(createTabButton("⚡ Bağlantı Ayarları", CARD_SETTINGS));
-        tabButtons.add(createTabButton("📊 Sunucu Durumu", CARD_METRICS));
-        tabButtons.add(createTabButton("🔄 Şema Farkı (Diff)", CARD_DIFF));
-        tabButtons.add(createTabButton("🐙 Git & GitHub", CARD_GIT));
+        tabButtons.add(createTabButton("Şema ve SQL Gezgini", CARD_SCHEMA));
+        tabButtons.add(createTabButton("İlişki Haritası (ERD)", CARD_ERD));
+        tabButtons.add(createTabButton("Bağlantı Ayarları", CARD_SETTINGS));
+        tabButtons.add(createTabButton("Sunucu Durumu", CARD_METRICS));
+        tabButtons.add(createTabButton("Şema Farkı (Diff)", CARD_DIFF));
+        tabButtons.add(createTabButton("Git ve GitHub", CARD_GIT));
 
         for (JButton btn : tabButtons) {
             navTabBar.add(btn);
@@ -527,9 +527,9 @@ public class MainFrame extends JFrame {
 
                 if (info != null && info.updateAvailable) {
                     latestReleaseInfo = info;
-                    updateBtn.setText("🚀 " + info.tagName + " Güncelle!");
+                    updateBtn.setText(info.tagName + " Güncelle");
                     updateBtn.setForeground(new Color(34, 197, 94));
-                    statusLabel.setText("🚀 Yeni Sürüm (" + info.tagName + ") hazır! Güncellemek için tıklayın.");
+                    statusLabel.setText("Yeni Sürüm (" + info.tagName + ") hazır. Güncellemek için tıklayın.");
                     logPanel.appendLog("[GÜNCELLEME] Yeni sürüm (" + info.tagName + ") bulundu.");
                     if (userInitiated) {
                         new UpdateDialog(MainFrame.this, info, updateManager).setVisible(true);

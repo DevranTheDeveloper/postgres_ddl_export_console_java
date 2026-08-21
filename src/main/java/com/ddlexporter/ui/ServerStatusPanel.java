@@ -31,14 +31,14 @@ public class ServerStatusPanel extends JPanel {
 
     // --- Disconnected / Zero-State UI Components ---
     private final JPanel disconnectedCard = new JPanel(new GridBagLayout());
-    private final JLabel disconnectedIcon = new JLabel("🔌");
+    private final JLabel disconnectedIcon = new JLabel("");
     private final JLabel disconnectedTitle = new JLabel("PostgreSQL Canlı Sunucu Durumu");
     private final JLabel disconnectedSubtitle = new JLabel("Canlı metrikleri, bağlantı havuzunu ve aktif sorguları izlemek için sunucuya bağlanın.");
     private final JLabel disconnectedTargetLabel = new JLabel("Hedef: localhost:5432 / postgres");
     private final JLabel disconnectedErrorLabel = new JLabel("");
-    private final JButton connectNowBtn = new JButton("⚡ Sunucuya Bağlan & Metrikleri Göster");
-    private final JButton quickStartBtn = new JButton("🚀 Hızlı Başlangıç & Kurulum Asistanı");
-    private final JButton demoModeBtn = new JButton("🧪 Demo / Simülasyon Modu");
+    private final JButton connectNowBtn = new JButton("Sunucuya Bağlan ve Metrikleri Göster");
+    private final JButton quickStartBtn = new JButton("Hızlı Başlangıç ve Kurulum Asistanı");
+    private final JButton demoModeBtn = new JButton("Demo ve Simülasyon Modu");
     private JPanel disconnectedBox;
 
     // --- Connected Live Dashboard Components ---
@@ -74,7 +74,7 @@ public class ServerStatusPanel extends JPanel {
 
     private final JCheckBox autoRefreshBox = new JCheckBox("5 sn otomatik yenile", false);
     private final JButton refreshBtn = new JButton("Yenile");
-    private final JButton disconnectBtn = new JButton("🔌 Bağlantıyı Kes");
+    private final JButton disconnectBtn = new JButton("Bağlantıyı Kes");
     private final JLabel lastUpdateLabel = new JLabel("Son Güncelleme: --:--:--");
 
     private Timer autoRefreshTimer;
@@ -402,14 +402,14 @@ public class ServerStatusPanel extends JPanel {
         updateTargetLabel();
 
         if (errorMessage != null && !errorMessage.isBlank()) {
-            disconnectedErrorLabel.setText("⚠️ Bağlantı Başarısız: " + errorMessage);
+            disconnectedErrorLabel.setText("Bağlantı Başarısız: " + errorMessage);
             disconnectedErrorLabel.setVisible(true);
         } else {
             disconnectedErrorLabel.setVisible(false);
         }
 
         connectNowBtn.setEnabled(true);
-        connectNowBtn.setText("⚡ Sunucuya Bağlan & Metrikleri Göster");
+        connectNowBtn.setText("Sunucuya Bağlan ve Metrikleri Göster");
         rootCardLayout.show(rootCards, CARD_DISCONNECTED);
     }
 
@@ -745,7 +745,7 @@ public class ServerStatusPanel extends JPanel {
             protected void done() {
                 refreshBtn.setEnabled(true);
                 connectNowBtn.setEnabled(true);
-                connectNowBtn.setText("⚡ Sunucuya Bağlan & Metrikleri Göster");
+                connectNowBtn.setText("Sunucuya Bağlan ve Metrikleri Göster");
 
                 java.time.format.DateTimeFormatter dtf = java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss");
                 lastUpdateLabel.setText("Son Güncelleme: " + java.time.LocalTime.now().format(dtf));

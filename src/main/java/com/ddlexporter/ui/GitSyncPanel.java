@@ -77,7 +77,7 @@ public class GitSyncPanel extends JPanel {
             protected void done() {
                 try {
                     String output = get();
-                    statusArea.setText(output.isBlank() ? "✅ Çalışma alanı temiz, bekleyen değişiklik yok." : output);
+                    statusArea.setText(output.isBlank() ? "Çalışma alanı temiz, bekleyen değişiklik yok." : output);
                 } catch (Exception ex) {
                     statusArea.setText("Git durumu okunamadı: " + ex.getMessage());
                 }

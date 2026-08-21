@@ -59,10 +59,10 @@ public class UniversalDatabaseHubDialog extends JDialog {
         JTabbedPane tabbedPane = new JTabbedPane();
         tabbedPane.setFont(tabbedPane.getFont().deriveFont(Font.BOLD, 12f));
 
-        tabbedPane.addTab("🐳 Docker & Konteynerler", createDockerTab());
-        tabbedPane.addTab("🔗 Bulut Bağlantı URL (URI Parser)", createUriTab());
-        tabbedPane.addTab("💻 Yerel Servis (Native)", createNativeTab());
-        tabbedPane.addTab("⚡ Örnek Şema Yükleyici (Seed)", createSeedTab());
+        tabbedPane.addTab("Docker ve Konteynerler", createDockerTab());
+        tabbedPane.addTab("Bulut Bağlantı URL (URI Parser)", createUriTab());
+        tabbedPane.addTab("Yerel Servis (Native)", createNativeTab());
+        tabbedPane.addTab("Örnek Şema Yükleyici (Seed)", createSeedTab());
 
         add(tabbedPane, BorderLayout.CENTER);
 
@@ -225,14 +225,14 @@ public class UniversalDatabaseHubDialog extends JDialog {
         // Supported Services Banner
         JPanel cloudBanner = new JPanel(new GridLayout(2, 4, 8, 8));
         cloudBanner.setBorder(BorderFactory.createTitledBorder("Desteklenen Bulut & Barındırma Servisleri"));
-        cloudBanner.add(new JLabel("⚡ Neon Serverless"));
-        cloudBanner.add(new JLabel("⚡ Supabase PostgreSQL"));
-        cloudBanner.add(new JLabel("⚡ AWS RDS & Aurora"));
-        cloudBanner.add(new JLabel("⚡ Render.com"));
-        cloudBanner.add(new JLabel("⚡ Railway.app"));
-        cloudBanner.add(new JLabel("⚡ Aiven PostgreSQL"));
-        cloudBanner.add(new JLabel("⚡ DigitalOcean DB"));
-        cloudBanner.add(new JLabel("⚡ Google Cloud SQL"));
+        cloudBanner.add(new JLabel("• Neon Serverless"));
+        cloudBanner.add(new JLabel("• Supabase PostgreSQL"));
+        cloudBanner.add(new JLabel("• AWS RDS & Aurora"));
+        cloudBanner.add(new JLabel("• Render.com"));
+        cloudBanner.add(new JLabel("• Railway.app"));
+        cloudBanner.add(new JLabel("• Aiven PostgreSQL"));
+        cloudBanner.add(new JLabel("• DigitalOcean DB"));
+        cloudBanner.add(new JLabel("• Google Cloud SQL"));
         panel.add(cloudBanner);
 
         return panel;

@@ -40,7 +40,7 @@ public class ErDiagramPanel extends JPanel {
         ));
 
         JPanel leftControls = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        JLabel title = new JLabel("🗺️ İlişki Haritası (ERD)");
+        JLabel title = new JLabel("İlişki Haritası (ERD)");
         title.setFont(title.getFont().deriveFont(Font.BOLD, 13f));
         title.setToolTipText("Tablo kartlarına çift tıklayarak SQL kodunu doğrudan açabilirsiniz");
         leftControls.add(title);
@@ -67,13 +67,13 @@ public class ErDiagramPanel extends JPanel {
         zoomOutBtn.addActionListener(e -> canvas.zoom(0.85));
         rightControls.add(zoomOutBtn);
 
-        JButton resetViewBtn = new JButton("↺ Sıfırla");
+        JButton resetViewBtn = new JButton("Sıfırla");
         resetViewBtn.setFont(resetViewBtn.getFont().deriveFont(Font.PLAIN, 11f));
         resetViewBtn.setToolTipText("Görünümü ve yakınlaştırmayı sıfırla");
         resetViewBtn.addActionListener(e -> canvas.resetView());
         rightControls.add(resetViewBtn);
 
-        JButton autoArrangeBtn = new JButton("📐 Düzenle");
+        JButton autoArrangeBtn = new JButton("Düzenle");
         autoArrangeBtn.setFont(autoArrangeBtn.getFont().deriveFont(Font.PLAIN, 11f));
         autoArrangeBtn.setToolTipText("Tabloları ızgaraya göre otomatik hizala");
         autoArrangeBtn.addActionListener(e -> {
@@ -82,13 +82,13 @@ public class ErDiagramPanel extends JPanel {
         });
         rightControls.add(autoArrangeBtn);
 
-        JButton copyMermaidBtn = new JButton("📋 Mermaid");
+        JButton copyMermaidBtn = new JButton("Mermaid");
         copyMermaidBtn.setFont(copyMermaidBtn.getFont().deriveFont(Font.PLAIN, 11f));
         copyMermaidBtn.setToolTipText("Mermaid ER Diyagram kodunu panoya kopyala");
         copyMermaidBtn.addActionListener(e -> copyMermaidCode());
         rightControls.add(copyMermaidBtn);
 
-        JButton exportImgBtn = new JButton("🖼️ PNG");
+        JButton exportImgBtn = new JButton("PNG Kaydet");
         exportImgBtn.setFont(exportImgBtn.getFont().deriveFont(Font.BOLD, 11f));
         exportImgBtn.setForeground(new Color(22, 163, 74));
         exportImgBtn.setToolTipText("ER Diyagramını PNG görseli olarak kaydet");
@@ -378,7 +378,7 @@ public class ErDiagramPanel extends JPanel {
             if (model.tables.isEmpty()) {
                 g2.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
                 g2.setColor(isDark ? new Color(200, 205, 215) : new Color(60, 65, 75));
-                String msg1 = "🗺️ Şema & İlişki Haritası Henüz Oluşmadı";
+                String msg1 = "Şema ve İlişki Haritası Henüz Oluşmadı";
                 FontMetrics fm = g2.getFontMetrics();
                 g2.drawString(msg1, (getWidth() - fm.stringWidth(msg1)) / 2 - offsetX, (getHeight() / 2 - 15) - offsetY);
 

@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.0";
+    public static final String CURRENT_VERSION = "5.5.1";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -37,34 +37,57 @@ public class UpdateManager {
 
     public UpdateManager() {
         this.httpClient = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(6))
+                .connectTimeout(Duration.ofSeconds(12))
                 .followRedirects(HttpClient.Redirect.ALWAYS)
                 .build();
     }
 
     /**
-     * Checks GitHub Releases API for the latest version.
+     * Checks GitHub Releases API for the latest version with resilient fallbacks.
      */
     public ReleaseInfo checkLatestRelease() throws Exception {
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(GITHUB_API_URL))
-                .header("Accept", "application/vnd.github.v3+json")
-                .header("User-Agent", "PostgreSQL-DDL-Studio/" + CURRENT_VERSION)
-                .timeout(Duration.ofSeconds(8))
-                .GET()
-                .build();
+        String jsonBody = null;
 
-        HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+        // 1. Primary Check: Java 11+ HttpClient
+        try {
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(GITHUB_API_URL))
+                    .header("Accept", "application/vnd.github.v3+json")
+                    .header("User-Agent", "Mozilla/5.0 (compatible; PostgreSQL-DDL-Studio-Updater/" + CURRENT_VERSION + ")")
+                    .timeout(Duration.ofSeconds(12))
+                    .GET()
+                    .build();
 
-        if (response.statusCode() != 200) {
-            throw new RuntimeException("GitHub API Yanıt Vermedi (HTTP " + response.statusCode() + ")");
+            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            if (response.statusCode() == 200) {
+                jsonBody = response.body();
+            }
+        } catch (Exception ignored) {}
+
+        // 2. Secondary Fallback Check: Direct HttpURLConnection with standard TLS
+        if (jsonBody == null || jsonBody.isBlank()) {
+            URL url = new URI(GITHUB_API_URL).toURL();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; PostgreSQL-DDL-Studio-Updater/" + CURRENT_VERSION + ")");
+            conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(20000);
+
+            int code = conn.getResponseCode();
+            if (code == 200) {
+                try (InputStream in = conn.getInputStream()) {
+                    jsonBody = new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+                }
+            } else {
+                throw new RuntimeException("GitHub API Baglanti Hatasi (HTTP " + code + ")");
+            }
         }
 
-        JsonNode root = mapper.readTree(response.body());
+        JsonNode root = mapper.readTree(jsonBody);
         ReleaseInfo info = new ReleaseInfo();
         info.tagName = root.hasNonNull("tag_name") ? root.get("tag_name").asText().trim() : "";
         info.name = root.hasNonNull("name") ? root.get("name").asText() : info.tagName;
-        info.body = root.hasNonNull("body") ? root.get("body").asText() : "Sürüm notları mevcut değil.";
+        info.body = root.hasNonNull("body") ? root.get("body").asText() : "Surum notlari mevcut degil.";
         info.publishedAt = root.hasNonNull("published_at") ? root.get("published_at").asText() : "";
         info.htmlUrl = root.hasNonNull("html_url") ? root.get("html_url").asText() : "https://github.com/" + GITHUB_REPO + "/releases/latest";
 
@@ -87,11 +110,16 @@ public class UpdateManager {
             }
         }
 
+        // Guaranteed fallback URL for JAR download
+        if (info.jarDownloadUrl == null || info.jarDownloadUrl.isBlank()) {
+            info.jarDownloadUrl = "https://github.com/" + GITHUB_REPO + "/releases/download/" + info.tagName + "/postgres_ddl_export_console_java-1.0.0.jar";
+        }
+
         return info;
     }
 
     /**
-     * Compares semantic versions (e.g. 5.4.0 vs 5.5.0).
+     * Compares semantic versions (e.g. 5.5.0 vs 5.5.1).
      */
     public static boolean isNewerVersion(String currentVer, String remoteVer) {
         if (remoteVer == null || remoteVer.isBlank()) return false;
@@ -111,35 +139,57 @@ public class UpdateManager {
     }
 
     /**
-     * Downloads the updated JAR file with live progress reporting.
-     * @param downloadUrl The direct asset URL
-     * @param targetFile Destination file
-     * @param progressCallback Callback with (downloadedBytes, totalBytes)
+     * Downloads the updated JAR file with robust multi-redirect following and progress reporting.
      */
     public void downloadUpdate(String downloadUrl, File targetFile, BiConsumer<Long, Long> progressCallback) throws Exception {
-        URL url = new URI(downloadUrl).toURL();
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-        conn.setRequestProperty("User-Agent", "PostgreSQL-DDL-Studio/" + CURRENT_VERSION);
-        conn.setConnectTimeout(10000);
-        conn.setReadTimeout(30000);
+        String targetUrl = downloadUrl;
+        HttpURLConnection conn = null;
+        int redirectCount = 0;
 
-        int responseCode = conn.getResponseCode();
-        // Follow redirects
-        if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP || responseCode == HttpURLConnection.HTTP_MOVED_PERM || responseCode == 307 || responseCode == 308) {
-            String newUrl = conn.getHeaderField("Location");
-            conn = (HttpURLConnection) new URI(newUrl).toURL().openConnection();
-            conn.setRequestProperty("User-Agent", "PostgreSQL-DDL-Studio/" + CURRENT_VERSION);
+        while (redirectCount < 8) {
+            URL url = new URI(targetUrl).toURL();
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (compatible; PostgreSQL-DDL-Studio-Updater/" + CURRENT_VERSION + ")");
+            conn.setRequestProperty("Accept", "*/*");
+            conn.setConnectTimeout(15000);
+            conn.setReadTimeout(45000);
+
+            int responseCode = conn.getResponseCode();
+            if (responseCode == HttpURLConnection.HTTP_MOVED_TEMP ||
+                responseCode == HttpURLConnection.HTTP_MOVED_PERM ||
+                responseCode == 307 || responseCode == 308 || responseCode == 303) {
+                String newUrl = conn.getHeaderField("Location");
+                if (newUrl != null && !newUrl.isBlank()) {
+                    if (!newUrl.startsWith("http")) {
+                        newUrl = new URI(targetUrl).resolve(newUrl).toString();
+                    }
+                    targetUrl = newUrl;
+                    redirectCount++;
+                    conn.disconnect();
+                    continue;
+                }
+            }
+
+            if (responseCode != HttpURLConnection.HTTP_OK && responseCode != 206) {
+                throw new RuntimeException("Sunucu Yanit Vermedi (HTTP " + responseCode + ")");
+            }
+            break;
+        }
+
+        if (conn == null) {
+            throw new RuntimeException("Baglanti kurulamadi.");
         }
 
         long contentLength = conn.getContentLengthLong();
         if (contentLength <= 0) {
-            contentLength = 10 * 1024 * 1024; // Default estimate 10MB
+            contentLength = 9 * 1024 * 1024; // Default estimate ~9MB
         }
 
         try (InputStream in = conn.getInputStream();
              FileOutputStream out = new FileOutputStream(targetFile)) {
 
-            byte[] buffer = new byte[8192];
+            byte[] buffer = new byte[16384];
             long totalRead = 0;
             int bytesRead;
 
@@ -150,6 +200,8 @@ public class UpdateManager {
                     progressCallback.accept(totalRead, contentLength);
                 }
             }
+        } finally {
+            conn.disconnect();
         }
     }
 
@@ -161,14 +213,13 @@ public class UpdateManager {
         File runningJar = getRunningJarFile();
 
         if (runningJar == null || !runningJar.getName().endsWith(".jar")) {
-            // If running in development / IDE, replace target jar
             runningJar = new File("target/postgres_ddl_export_console_java-1.0.0.jar");
         }
 
         File appDir = runningJar.getParentFile() != null ? runningJar.getParentFile() : new File(".");
 
         if (os.contains("win")) {
-            // Windows atomic updater script with file unlock delay and auto-launcher
+            // Windows atomic updater script
             File updaterBat = new File(appDir, "update_runner.bat");
             String batContent = "@echo off\r\n" +
                     "ping 127.0.0.1 -n 2 >nul\r\n" +
@@ -188,6 +239,8 @@ public class UpdateManager {
         } else {
             // Linux & macOS atomic inode replacement and relaunch
             java.nio.file.Files.move(downloadedFile.toPath(), runningJar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+            runningJar.setExecutable(true);
+
             File linuxRunScript = new File(appDir, "run.sh");
             if (linuxRunScript.exists() && linuxRunScript.canExecute()) {
                 new ProcessBuilder(linuxRunScript.getAbsolutePath())
