@@ -3,7 +3,7 @@
 ; ========================================================================
 
 #define MyAppName "PostgreSQL DDL Studio"
-#define MyAppVersion "5.5.4"
+#define MyAppVersion "5.5.5"
 #define MyAppPublisher "Devran Sever"
 #define MyAppURL "https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java"
 #define MyAppExeName "PostgreSQL-DDL-Studio.bat"
@@ -39,13 +39,13 @@ PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 
 ; Windows PE Version & Security Metadata
-VersionInfoVersion=5.5.4.0
-VersionInfoTextVersion=5.5.4
+VersionInfoVersion=5.5.5.0
+VersionInfoTextVersion=5.5.5
 VersionInfoCompany={#MyAppPublisher}
 VersionInfoDescription={#MyAppName} Setup Installer
 VersionInfoCopyright=Copyright (C) 2026 {#MyAppPublisher}. All rights reserved.
 VersionInfoProductName={#MyAppName}
-VersionInfoProductVersion=5.5.4.0
+VersionInfoProductVersion=5.5.5.0
 VersionInfoOriginalFileName=PostgreSQL-DDL-Studio-Setup-{#MyAppVersion}.exe
 MinVersion=6.1sp1
 

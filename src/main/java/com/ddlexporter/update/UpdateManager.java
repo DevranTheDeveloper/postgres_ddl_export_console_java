@@ -16,7 +16,7 @@ import java.time.Duration;
 import java.util.function.BiConsumer;
 
 public class UpdateManager {
-    public static final String CURRENT_VERSION = "5.5.4";
+    public static final String CURRENT_VERSION = "5.5.5";
     private static final String GITHUB_REPO = "DevranTheDeveloper/postgres_ddl_export_console_java";
     private static final String GITHUB_API_URL = "https://api.github.com/repos/" + GITHUB_REPO + "/releases/latest";
 
@@ -213,10 +213,18 @@ public class UpdateManager {
         File runningJar = getRunningJarFile();
 
         if (runningJar == null || !runningJar.getName().endsWith(".jar")) {
-            runningJar = new File("target/postgres_ddl_export_console_java-1.0.0.jar");
+            runningJar = new File("PostgreSQL-DDL-Studio.jar");
         }
 
-        File appDir = runningJar.getParentFile() != null ? runningJar.getParentFile() : new File(".");
+        File appDir = runningJar.getParentFile() != null ? runningJar.getParentFile().getAbsoluteFile() : new File(".").getAbsoluteFile();
+
+        // Create update_pending.jar directly in the app directory for instant pickup by launchers
+        File pendingJar = new File(appDir, "update_pending.jar");
+        try {
+            java.nio.file.Files.copy(downloadedFile.toPath(), pendingJar.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        } catch (Exception ignored) {
+            pendingJar = downloadedFile;
+        }
 
         if (os.contains("mac")) {
             // Find macOS .app bundle directory if running inside an app bundle
@@ -230,17 +238,21 @@ public class UpdateManager {
                 current = current.getParentFile();
             }
 
-            File updaterSh = File.createTempFile("pg_ddl_mac_updater", ".sh");
+            File updaterSh = File.createTempFile("pg_ddl_mac_patcher", ".sh");
             long currentPid = ProcessHandle.current().pid();
 
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("if [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("if [ -f \"").append(pendingJar.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("    cp -f \"").append(pendingJar.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\"\n");
+            sh.append("elif [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
             sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
             sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             sh.append("fi\n");
+            sh.append("rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             if (appBundle != null) {
                 sh.append("open -n \"").append(appBundle.getAbsolutePath()).append("\"\n");
             } else {
@@ -256,14 +268,15 @@ public class UpdateManager {
             System.exit(0);
 
         } else if (os.contains("win")) {
-            // Windows detached updater batch script with retry loop and ping delay
-            File updaterBat = File.createTempFile("pg_ddl_win_updater", ".bat");
+            // Windows detached updater batch script with retry loop and dual source
+            File updaterBat = File.createTempFile("pg_ddl_win_patcher", ".bat");
             File stdJar = new File(appDir, "PostgreSQL-DDL-Studio.jar");
             File winBatScript = new File(appDir, "PostgreSQL-DDL-Studio.bat");
 
             StringBuilder bat = new StringBuilder();
             bat.append("@echo off\r\n");
             bat.append("setlocal\r\n");
+            bat.append("set \"PENDING=").append(pendingJar.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"SRC=").append(downloadedFile.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"DST=").append(runningJar.getAbsolutePath()).append("\"\r\n");
             bat.append("set \"STD=").append(stdJar.getAbsolutePath()).append("\"\r\n");
@@ -275,7 +288,14 @@ public class UpdateManager {
             bat.append("REM Wait for Java process to exit and release file handle\r\n");
             bat.append("for /L %%i in (1,1,30) do (\r\n");
             bat.append("    ping 127.0.0.1 -n 2 >nul\r\n");
-            bat.append("    if exist \"%SRC%\" (\r\n");
+            bat.append("    if exist \"%PENDING%\" (\r\n");
+            bat.append("        copy /y \"%PENDING%\" \"%DST%\" >nul 2>nul\r\n");
+            bat.append("        if not errorlevel 1 (\r\n");
+            bat.append("            copy /y \"%PENDING%\" \"%STD%\" >nul 2>nul\r\n");
+            bat.append("            del /f /q \"%PENDING%\" >nul 2>nul\r\n");
+            bat.append("            goto :LAUNCH\r\n");
+            bat.append("        )\r\n");
+            bat.append("    ) else if exist \"%SRC%\" (\r\n");
             bat.append("        copy /y \"%SRC%\" \"%DST%\" >nul 2>nul\r\n");
             bat.append("        if not errorlevel 1 (\r\n");
             bat.append("            copy /y \"%SRC%\" \"%STD%\" >nul 2>nul\r\n");
@@ -286,6 +306,7 @@ public class UpdateManager {
             bat.append("\r\n");
             bat.append(":LAUNCH\r\n");
             bat.append("del /f /q \"%SRC%\" 2>nul\r\n");
+            bat.append("del /f /q \"%PENDING%\" 2>nul\r\n");
             bat.append("cd /d \"%APP_DIR%\"\r\n");
             bat.append("if exist \"%BAT%\" (\r\n");
             bat.append("    start \"\" /d \"%APP_DIR%\" \"%BAT%\"\r\n");
@@ -302,17 +323,21 @@ public class UpdateManager {
 
         } else {
             // Linux detached POSIX updater
-            File updaterSh = File.createTempFile("pg_ddl_linux_updater", ".sh");
+            File updaterSh = File.createTempFile("pg_ddl_linux_patcher", ".sh");
             long currentPid = ProcessHandle.current().pid();
 
             StringBuilder sh = new StringBuilder();
             sh.append("#!/bin/bash\n");
             sh.append("while kill -0 ").append(currentPid).append(" 2>/dev/null; do sleep 0.15; done\n");
-            sh.append("if [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("if [ -f \"").append(pendingJar.getAbsolutePath()).append("\" ]; then\n");
+            sh.append("    cp -f \"").append(pendingJar.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
+            sh.append("    rm -f \"").append(pendingJar.getAbsolutePath()).append("\"\n");
+            sh.append("elif [ -f \"").append(downloadedFile.getAbsolutePath()).append("\" ]; then\n");
             sh.append("    cp -f \"").append(downloadedFile.getAbsolutePath()).append("\" \"").append(runningJar.getAbsolutePath()).append("\"\n");
             sh.append("    chmod 755 \"").append(runningJar.getAbsolutePath()).append("\"\n");
-            sh.append("    rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             sh.append("fi\n");
+            sh.append("rm -f \"").append(downloadedFile.getAbsolutePath()).append("\"\n");
             File linuxRunScript = new File(appDir, "run.sh");
             if (linuxRunScript.exists()) {
                 sh.append("chmod +x \"").append(linuxRunScript.getAbsolutePath()).append("\"\n");

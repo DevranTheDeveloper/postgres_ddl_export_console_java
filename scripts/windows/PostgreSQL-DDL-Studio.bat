@@ -97,5 +97,9 @@ exit /b 1
 
 :LAUNCH
 cd /d "%~dp0"
+if exist "%~dp0update_pending.jar" (
+    copy /y "%~dp0update_pending.jar" "%~dp0PostgreSQL-DDL-Studio.jar" >nul 2>nul
+    del /f /q "%~dp0update_pending.jar" >nul 2>nul
+)
 start "" "%JAVA_CMD%" -jar "PostgreSQL-DDL-Studio.jar" %*
 exit /b 0

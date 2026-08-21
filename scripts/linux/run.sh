@@ -7,6 +7,12 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$DIR"
 
+# 0. Auto-apply pending update if present
+if [ -f "$DIR/update_pending.jar" ]; then
+    cp -f "$DIR/update_pending.jar" "$DIR/PostgreSQL-DDL-Studio.jar" 2>/dev/null || true
+    rm -f "$DIR/update_pending.jar" 2>/dev/null || true
+fi
+
 # 1. Locate Application JAR
 JAR_PATH=""
 for candidate in \

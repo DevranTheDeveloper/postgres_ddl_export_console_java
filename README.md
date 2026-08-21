@@ -1,4 +1,4 @@
-# PostgreSQL DDL Studio (v5.5.4)
+# PostgreSQL DDL Studio (v5.5.5)
 
 [![Build and Release Multi-OS](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/actions/workflows/release.yml/badge.svg)](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/actions/workflows/release.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -16,13 +16,13 @@ Tüm platformlar için en son derlenmiş paketlere **[GitHub Releases Sayfasınd
 
 | Platform | Format / Paket | Doğrudan İndirme Bağlantısı | Açıklama |
 | :--- | :--- | :--- | :--- |
-| 🪟 **Windows** | **`.exe` Kurulum Sihirbazı** | [📥 **PostgreSQL-DDL-Studio-Setup-5.5.4.exe**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/PostgreSQL-DDL-Studio-Setup-5.5.4.exe) | ⭐ **Önerilen**: İleri-İleri Kurulum Sihirbazı, Masaüstü/Başlat Simgeleri |
-| 🍏 **macOS** | **`.dmg` Yükleyici** | [📥 **PostgreSQL-DDL-Studio-5.5.4-macOS.dmg**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/PostgreSQL-DDL-Studio-5.5.4-macOS.dmg) | Apple Silicon (M1-M4) & Intel, Sürükle-Bırak Kurulum |
-| 🐧 **Linux** | **`.deb` Kurulum Paketi** | [📥 **PostgreSQL-DDL-Studio-5.5.4-Linux.deb**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/PostgreSQL-DDL-Studio-5.5.4-Linux.deb) | ⭐ Kali, Ubuntu, Debian için tek tıkla kurulum |
-| 🐧 **Linux** | **Taşınabilir `.tar.gz`** | [📥 **PostgreSQL-DDL-Studio-5.5.4-Linux.tar.gz**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/PostgreSQL-DDL-Studio-5.5.4-Linux.tar.gz) | Kali, Ubuntu, Debian, Fedora, Arch (`run.sh` / `install.sh`) |
-| 🪟 **Windows** | **Taşınabilir `.zip`** | [📥 **PostgreSQL-DDL-Studio-5.5.4-Windows.zip**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/PostgreSQL-DDL-Studio-5.5.4-Windows.zip) | Kurulum gerektirmeyen taşınabilir (Portable) paket |
-| ☕ **Evrensel JAR** | **Fat `.jar`** | [📥 **postgres_ddl_export_console_java-1.0.0.jar**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/postgres_ddl_export_console_java-1.0.0.jar) | Tüm platformlar, CLI ve Sunucu otomasyonu |
-| 🔒 **Güvenlik** | **SHA-256 Sağlama** | [📄 **SHA256SUMS.txt**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.4/SHA256SUMS.txt) | Kriptografik bütünlük doğrulama |
+| 🪟 **Windows** | **`.exe` Kurulum Sihirbazı** | [📥 **PostgreSQL-DDL-Studio-Setup-5.5.5.exe**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/PostgreSQL-DDL-Studio-Setup-5.5.5.exe) | ⭐ **Önerilen**: İleri-İleri Kurulum Sihirbazı, Masaüstü/Başlat Simgeleri |
+| 🍏 **macOS** | **`.dmg` Yükleyici** | [📥 **PostgreSQL-DDL-Studio-5.5.5-macOS.dmg**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/PostgreSQL-DDL-Studio-5.5.5-macOS.dmg) | Apple Silicon (M1-M4) & Intel, Sürükle-Bırak Kurulum |
+| 🐧 **Linux** | **`.deb` Kurulum Paketi** | [📥 **PostgreSQL-DDL-Studio-5.5.5-Linux.deb**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/PostgreSQL-DDL-Studio-5.5.5-Linux.deb) | ⭐ Kali, Ubuntu, Debian için tek tıkla kurulum |
+| 🐧 **Linux** | **Taşınabilir `.tar.gz`** | [📥 **PostgreSQL-DDL-Studio-5.5.5-Linux.tar.gz**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/PostgreSQL-DDL-Studio-5.5.5-Linux.tar.gz) | Kali, Ubuntu, Debian, Fedora, Arch (`run.sh` / `install.sh`) |
+| 🪟 **Windows** | **Taşınabilir `.zip`** | [📥 **PostgreSQL-DDL-Studio-5.5.5-Windows.zip**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/PostgreSQL-DDL-Studio-5.5.5-Windows.zip) | Kurulum gerektirmeyen taşınabilir (Portable) paket |
+| ☕ **Evrensel JAR** | **Fat `.jar`** | [📥 **postgres_ddl_export_console_java-1.0.0.jar**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/postgres_ddl_export_console_java-1.0.0.jar) | Tüm platformlar, CLI ve Sunucu otomasyonu |
+| 🔒 **Güvenlik** | **SHA-256 Sağlama** | [📄 **SHA256SUMS.txt**](https://github.com/DevranTheDeveloper/postgres_ddl_export_console_java/releases/download/v5.5.5/SHA256SUMS.txt) | Kriptografik bütünlük doğrulama |
 
 ---
 

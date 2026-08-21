@@ -73,4 +73,10 @@ if [ -z "$JAVA_EXEC" ]; then
     exit 1
 fi
 
+# Auto-apply pending update if present
+if [ -f "$DIR/update_pending.jar" ]; then
+    cp -f "$DIR/update_pending.jar" "$DIR/app.jar" 2>/dev/null || true
+    rm -f "$DIR/update_pending.jar" 2>/dev/null || true
+fi
+
 exec "$JAVA_EXEC" -Xdock:name="PostgreSQL DDL Studio" -jar "$DIR/app.jar" "$@"
